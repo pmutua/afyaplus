@@ -61,19 +61,42 @@ Create and configure the environment file:
 Copy-Item .env.example .env
 ```
 
-Cloud configuration options:
+Edit `.env` after copying it. Choose one cloud provider option, then keep the
+local Ollama settings for fallback.
+
+Cloud configuration options, choose one:
 
 ```text
-# OpenRouter
+# Option A: OpenRouter
 OPENROUTER_API_KEY=...
 MODEL_BASE_URL=https://openrouter.ai/api/v1
 CLOUD_MODEL=openai/gpt-4o-mini
 
-# Direct OpenAI
+# Option B: Direct OpenAI
 OPENAI_API_KEY=...
 MODEL_BASE_URL=https://api.openai.com/v1
 CLOUD_MODEL=gpt-4o-mini
 ```
+
+Do not configure both cloud options for normal use. The app has one cloud
+inference path, and OpenRouter is checked first if both keys are present.
+OpenRouter and direct OpenAI are alternatives for reaching a GPT-4o-mini class
+cloud model, not two separate cloud fallbacks.
+
+Local Ollama configuration:
+
+```text
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.2
+OLLAMA_API_KEY=ollama
+LOCAL_TIMEOUT_SECONDS=20.0
+```
+
+Keep the local settings because the application is designed to try cloud first
+and then fall back to Ollama if the cloud request fails, times out, returns
+invalid JSON, or cannot be reached. The cloud path gives stronger and faster
+reasoning when the network is healthy. The local path keeps the triage engine
+usable during cloud or network failure.
 
 Required Python dependencies are listed in `requirements.txt`:
 
