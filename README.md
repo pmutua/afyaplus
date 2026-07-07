@@ -1,224 +1,139 @@
-# AfyaPlus Triage Engine
+# AfyaPlus Cumulative Capstone
 
-Week 1 capstone prototype for the AfyaPlus health assistant. The app accepts a natural-language patient message, sends it through a defensive AI triage prompt, forces strict JSON output, parses it with Python, and prints a backend routing decision.
+This repository grows by week. The root keeps the project index and current
+submission summary. Week-specific notes, presentation scripts, and sample
+outputs live in `docs/`.
 
-## What This Demonstrates
+## Week 1: Triage Engine
 
-- Secure environment-based model configuration
-- Cloud pathway using GPT-4o-mini through an OpenAI-compatible endpoint
-- Local fallback pathway using Ollama
-- Defensive role-based prompt with reasoning guardrails
-- Native JSON mode with `response_format={"type": "json_object"}`
-- `json.loads()` parsing and schema validation
-- Timeout and provider fallback handling
-- Conservative post-parse safety rules for known high-risk patterns
-- Cloud-vs-local latency comparison support
+Implementation: `app.py`
 
-## Setup
+Week 1 builds a Python inference engine that converts unstructured patient
+messages into strict JSON for backend routing. It calls a cloud model first,
+falls back to local Ollama when the cloud path fails, validates the JSON schema,
+and prints a one-line routing decision.
+
+## Prerequisites
+
+- Python 3.11 or newer.
+- A virtual environment inside this repository: `.venv`.
+- Cloud API key in `.env`: use `OPENROUTER_API_KEY` with OpenRouter settings
+  or `OPENAI_API_KEY` with direct OpenAI settings.
+- Ollama installed as a system dependency for local fallback.
+- Local model pulled with `ollama pull llama3.2`.
+
+## Setup and Run
+
+From the repository root, activate the virtual environment:
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+```
 
 Install dependencies:
 
 ```powershell
-py -3 -m pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-Create `.env` from `.env.example`:
+Create and configure the environment file:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Configure at least one cloud key:
+Cloud configuration options:
 
 ```text
+# OpenRouter
 OPENROUTER_API_KEY=...
 MODEL_BASE_URL=https://openrouter.ai/api/v1
 CLOUD_MODEL=openai/gpt-4o-mini
+
+# Direct OpenAI
+OPENAI_API_KEY=...
+MODEL_BASE_URL=https://api.openai.com/v1
+CLOUD_MODEL=gpt-4o-mini
 ```
 
-For local fallback, install Ollama and pull a model:
+Required Python dependencies are listed in `requirements.txt`:
+
+```text
+openai
+python-dotenv
+httpx
+```
+
+Ollama is not listed in `requirements.txt` because this app does not import a
+Python `ollama` package. It calls Ollama through the local OpenAI-compatible HTTP
+endpoint at `http://localhost:11434/v1`.
+
+Install and prepare Ollama separately:
 
 ```powershell
+ollama --version
 ollama pull llama3.2
+ollama serve
 ```
 
-## Run
-
-Default test case:
+Run the application:
 
 ```powershell
-py -3 app.py
+python app.py --help
+python app.py
+python app.py "My chest hurts and I cannot breathe properly"
+python app.py --simulate-cloud-failure "My child has a fever and is very weak"
+python app.py --compare-latency "I have had a headache for two days"
 ```
 
-Custom patient message:
+If the virtual environment is not activated, use:
 
 ```powershell
-py -3 app.py "My chest hurts and I cannot breathe properly"
+.\.venv\Scripts\python.exe app.py
 ```
 
-Demonstrate local fallback:
+## Prompt Engineering Log
 
-```powershell
-py -3 app.py --simulate-cloud-failure "My child has a fever and is very weak"
-```
-
-Compare cloud and local latency:
-
-```powershell
-py -3 app.py --compare-latency "I have had a headache for two days"
-```
-
-## JSON Schema
-
-The backend expects exactly this structure:
-
-```json
-{
-  "is_critical_emergency": true,
-  "detected_symptoms": ["severe headache", "sudden swelling"],
-  "clinical_reasoning_summary": "Third-trimester pregnancy with persistent headache and sudden swelling suggests a high-risk pregnancy warning pattern.",
-  "routing_destination": "Emergency Medical Call Team"
-}
-```
-
-`app.py` validates:
-
-- all required keys are present
-- no extra keys are returned
-- `is_critical_emergency` is boolean
-- `detected_symptoms` is a list of strings
-- summary and destination are strings
-
-After parsing, the app also applies conservative safety rules for obvious
-high-risk patterns. For example, chest pain plus breathing difficulty is forced
-to `Emergency Medical Call Team`, and a child with fever plus weakness/vomiting
-cannot remain in `General Queue`. This follows the Week 1 principle that prompts
-are not enough; production systems need validation layers.
-
-## Prompt Iteration Log
-
-| Version | Prompt Pattern | Result | Why It Changed |
+| Version | Pattern | What happened | Why it changed |
 |---|---|---|---|
-| V1 naive | Broad urgency request | Risk of paragraphs and conversational advice | Too hard for backend parsing |
-| V2 constrained | Role plus JSON instruction | Better structure, but still weaker safety boundaries | Needed stronger guardrails |
-| V3 defensive | Role, internal step checks, no fluff, exact JSON schema | Best fit for backend triage | Forces danger-sign evaluation and machine-readable output |
+| V1 | Simple urgency request | Could produce conversational prose | Backend needs predictable structured data |
+| V2 | Role plus JSON instruction | Better shape, but weak safety boundaries | Needed stronger protection against hallucination and prompt injection |
+| V3 | Defensive triage routing engine | Best fit for automation | Adds untrusted-input handling, private danger-sign checking, no diagnosis, no prescriptions, no markdown, exact JSON |
 
-The final prompt uses a strict operational identity: `AfyaPlus Health triage routing engine`. It treats user input as untrusted data, blocks diagnosis/prescription behavior, checks danger signs before output, and returns only JSON.
+## Guardrail Rationale
+
+- Patient messages are treated as data, not instructions, to reduce prompt
+  injection risk.
+- The model is blocked from diagnosis, prescriptions, and dosage calculations
+  because this prototype only routes cases.
+- Conversational openings, apologies, and markdown are banned so the backend can
+  parse raw JSON reliably.
+- High-risk patterns are checked again after parsing so obvious danger signs are
+  not under-routed if the model response is weak.
 
 ## Baseline Latency Table
 
-Fill this table with your own `--compare-latency` run because local hardware and network conditions vary.
-
-Observed local run on July 7, 2026:
-
-| Provider | Status | Latency seconds |
-|---|---:|---:|
-| cloud | APITimeoutError | n/a |
-| local-ollama | success | 9.36 |
-
-The cloud timeout is expected behavior when the request exceeds the capstone's
-4-second transit limit. The important production behavior is that the local
-fallback completed and returned parseable JSON.
-
-## Sample Outputs
-
-### Scenario 1: Pregnancy Emergency
-
-Command:
+Run:
 
 ```powershell
-py -3 app.py
+python app.py --compare-latency "I have had a headache for two days"
 ```
 
-Expected behavior:
+Observed on July 7, 2026 across three runs:
 
-- detects severe headache and sudden swelling
-- marks `is_critical_emergency` as `true`
-- routes to `Emergency Medical Call Team`
+| Run | Cloud status | Cloud seconds | Local status | Local seconds |
+|---:|---|---:|---|---:|
+| 1 | success | 2.26 | success | 7.75 |
+| 2 | success | 2.40 | success | 7.79 |
+| 3 | success | 2.17 | success | 7.77 |
+| Average | success | 2.28 | success | 7.77 |
 
-Observed output:
+This confirms both cloud and local Ollama paths completed successfully. Local
+latency depends on Ollama availability, hardware, and selected model.
 
-```json
-{
-  "is_critical_emergency": true,
-  "detected_symptoms": [
-    "severe headache",
-    "sudden swelling of feet"
-  ],
-  "clinical_reasoning_summary": "The patient is 7 months pregnant and presents with a severe headache and sudden swelling of feet, which are concerning signs that may indicate a serious condition requiring immediate attention.",
-  "routing_destination": "Emergency Medical Call Team"
-}
-```
+## Week 1 Docs
 
-### Scenario 2: Breathing Emergency
-
-Command:
-
-```powershell
-py -3 app.py "My chest hurts and I cannot breathe properly"
-```
-
-Expected behavior:
-
-- detects chest pain and breathing difficulty
-- marks critical emergency
-- routes immediately
-
-Observed output:
-
-```json
-{
-  "is_critical_emergency": true,
-  "detected_symptoms": [
-    "chest pain",
-    "breathing difficulty"
-  ],
-  "clinical_reasoning_summary": "The patient is experiencing chest pain and difficulty breathing, which are critical emergency symptoms.",
-  "routing_destination": "Emergency Medical Call Team"
-}
-```
-
-### Scenario 3: Cloud Failure Fallback
-
-Command:
-
-```powershell
-py -3 app.py --simulate-cloud-failure "My child has a fever and is very weak"
-```
-
-Expected behavior:
-
-- prints a warning that cloud failed
-- calls local Ollama
-- returns the same JSON schema if local model is available
-
-Observed output:
-
-```json
-{
-  "is_critical_emergency": false,
-  "detected_symptoms": [
-    "fever",
-    "weakness"
-  ],
-  "clinical_reasoning_summary": "Child presents with fever and weakness, may require urgent attention but not immediate emergency.",
-  "routing_destination": "Urgent Nurse Callback"
-}
-```
-
-## Operational Risks
-
-- The app is a prototype, not a clinical device.
-- JSON validity does not guarantee clinical correctness.
-- Local Ollama quality may be lower than the cloud model.
-- The fallback path depends on Ollama running locally.
-- High-risk cases should route to qualified human review.
-- Real deployment needs logging, monitoring, rate limits, privacy controls, and stronger schema validation.
-
-## Presentation Outline
-
-1. Business problem: unstructured patient messages cannot drive backend routing.
-2. Solution: defensive AI triage engine returning strict JSON.
-3. Model choice: cloud GPT-4o-mini first, local Ollama fallback for resilience.
-4. Safety: no diagnosis, no prescriptions, urgent routing for danger signs.
-5. Risks: model errors, outages, local model quality, privacy, and need for human escalation.
+- [Week 1 documentation](docs/week1.md)
+- [Week 1 sample outputs](docs/week1_sample_outputs.md)
+- [Week 1 video script](docs/week1_video_script.md)
