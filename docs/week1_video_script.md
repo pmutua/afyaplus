@@ -51,15 +51,48 @@ the app upgrades the route instead of relying only on the model.
 
 ## 3:45-4:35 Demo
 
-First, I run the default pregnancy example. The expected destination is
-`Emergency Medical Call Team`.
+First, I run the default pregnancy example:
+
+```powershell
+python app.py
+```
+
+The cloud model responds in 2.85 seconds. It detects severe headache and sudden
+swelling of feet in a 7-month pregnancy, marks the case as a critical emergency,
+and routes it to `Emergency Medical Call Team`.
 
 Second, I run a breathing emergency: "My chest hurts and I cannot breathe
-properly." The system should again route immediately to the emergency team.
+properly."
+
+```powershell
+python app.py "My chest hurts and I cannot breathe properly"
+```
+
+The cloud model responds in 2.20 seconds. It detects chest pain and breathing
+difficulty, marks the case as critical, and routes immediately to
+`Emergency Medical Call Team`.
 
 Third, I simulate cloud failure. The app prints a warning, attempts local Ollama,
-and still returns valid JSON. If Ollama is unavailable, it uses a static safety
+and still returns valid JSON.
+
+```powershell
+python app.py --simulate-cloud-failure "My child has a fever and is very weak"
+```
+
+With Ollama running, the fallback provider is `local-ollama`. It responds in
+10.24 seconds, detects fever and weakness, and routes the child to
+`Urgent Nurse Callback`. If Ollama is unavailable, the app uses a static safety
 fallback rather than crashing.
+
+Finally, I compare cloud and local latency:
+
+```powershell
+python app.py --compare-latency "I have had a headache for two days"
+```
+
+Across three runs, the cloud path averages 2.28 seconds and local Ollama
+averages 7.77 seconds. This shows the cloud path is faster, while the local path
+is a working resilience option.
 
 ## 4:35-5:00 Risks and Next Steps
 
