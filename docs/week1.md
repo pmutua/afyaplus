@@ -8,6 +8,34 @@ handling cloud failures safely.
 
 The implemented solution is `app.py`.
 
+## Key Terms
+
+Preeclampsia detection means identifying whether a pregnant patient's
+presentation has danger signs consistent with possible preeclampsia, such as
+high blood pressure, severe headache, blurred vision, sudden swelling, or other
+signs of organ stress after 20 weeks of pregnancy. This prototype does not
+diagnose preeclampsia. It treats pregnancy plus severe headache and sudden
+swelling as a high-risk routing pattern.
+
+Urgency classification means deciding how quickly a patient needs care. In this
+app, the model maps messages to one of three backend routes:
+
+- `Emergency Medical Call Team`
+- `Urgent Nurse Callback`
+- `General Queue`
+
+General symptom triage means assessing any patient message, identifying the
+reported symptoms, deciding urgency, and recommending the next routing step. The
+Week 1 app mainly implements general symptom triage with extra guardrails for
+known danger signs, including pregnancy danger signs, chest pain with breathing
+difficulty, severe bleeding, confusion, and serious child illness.
+
+| Task | Focus | How Week 1 uses it |
+|---|---|---|
+| Preeclampsia detection | One pregnancy complication | Used as a danger-sign pattern, not a diagnosis |
+| Urgency classification | How fast care is needed | Converts messages into emergency, urgent, or routine routing |
+| General symptom triage | Broad symptom assessment | Main task implemented by `app.py` |
+
 ## Requirements Mapping
 
 | Requirement | Implementation |
