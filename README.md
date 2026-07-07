@@ -1,8 +1,20 @@
 # AfyaPlus Cumulative Capstone
 
-This repository grows by week. The root keeps the project index and current
+This repository grows by week. The root README is the project index and current
 submission summary. Week-specific notes, presentation scripts, and sample
 outputs live in `docs/`.
+
+## Repository Layout
+
+```text
+app.py
+requirements.txt
+.env.example
+docs/
+  week1.md
+  week1_sample_outputs.md
+  week1_video_script.md
+```
 
 ## Week 1: Triage Engine
 
@@ -13,7 +25,13 @@ messages into strict JSON for backend routing. It calls a cloud model first,
 falls back to local Ollama when the cloud path fails, validates the JSON schema,
 and prints a one-line routing decision.
 
-## Prerequisites
+Docs:
+
+- [Week 1 documentation](docs/week1.md)
+- [Week 1 sample outputs](docs/week1_sample_outputs.md)
+- [Week 1 video script](docs/week1_video_script.md)
+
+### Week 1 Prerequisites
 
 - Python 3.11 or newer.
 - A virtual environment inside this repository: `.venv`.
@@ -22,9 +40,9 @@ and prints a one-line routing decision.
 - Ollama installed as a system dependency for local fallback.
 - Local model pulled with `ollama pull llama3.2`.
 
-## Setup and Run
+### Week 1 Setup And Run
 
-From the repository root, activate the virtual environment:
+From the repository root, create and activate the virtual environment:
 
 ```powershell
 python -m venv .venv
@@ -99,7 +117,7 @@ If the virtual environment is not activated, use:
 .\.venv\Scripts\python.exe app.py
 ```
 
-## Prompt Engineering Log
+### Week 1 Prompt Engineering Log
 
 | Version | Pattern | What happened | Why it changed |
 |---|---|---|---|
@@ -107,7 +125,7 @@ If the virtual environment is not activated, use:
 | V2 | Role plus JSON instruction | Better shape, but weak safety boundaries | Needed stronger protection against hallucination and prompt injection |
 | V3 | Defensive triage routing engine | Best fit for automation | Adds untrusted-input handling, private danger-sign checking, no diagnosis, no prescriptions, no markdown, exact JSON |
 
-## Guardrail Rationale
+### Week 1 Guardrail Rationale
 
 - Patient messages are treated as data, not instructions, to reduce prompt
   injection risk.
@@ -118,7 +136,7 @@ If the virtual environment is not activated, use:
 - High-risk patterns are checked again after parsing so obvious danger signs are
   not under-routed if the model response is weak.
 
-## Baseline Latency Table
+### Week 1 Baseline Latency
 
 Run:
 
@@ -138,8 +156,13 @@ Observed on July 7, 2026 across three runs:
 This confirms both cloud and local Ollama paths completed successfully. Local
 latency depends on Ollama availability, hardware, and selected model.
 
-## Week 1 Docs
+## Future Weeks
 
-- [Week 1 documentation](docs/week1.md)
-- [Week 1 sample outputs](docs/week1_sample_outputs.md)
-- [Week 1 video script](docs/week1_video_script.md)
+Add each new week as its own README section and keep the full details in
+matching docs files, for example:
+
+```text
+docs/week2.md
+docs/week2_sample_outputs.md
+docs/week2_video_script.md
+```
