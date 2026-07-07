@@ -98,6 +98,34 @@ invalid JSON, or cannot be reached. The cloud path gives stronger and faster
 reasoning when the network is healthy. The local path keeps the triage engine
 usable during cloud or network failure.
 
+Example final `.env` using OpenRouter:
+
+```text
+OPENROUTER_API_KEY=sk-or-your-real-key
+MODEL_BASE_URL=https://openrouter.ai/api/v1
+CLOUD_MODEL=openai/gpt-4o-mini
+
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.2
+OLLAMA_API_KEY=ollama
+LOCAL_TIMEOUT_SECONDS=20.0
+```
+
+Example final `.env` using direct OpenAI:
+
+```text
+OPENAI_API_KEY=sk-your-real-openai-key
+MODEL_BASE_URL=https://api.openai.com/v1
+CLOUD_MODEL=gpt-4o-mini
+
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=llama3.2
+OLLAMA_API_KEY=ollama
+LOCAL_TIMEOUT_SECONDS=20.0
+```
+
+Never commit the real `.env` file.
+
 Required Python dependencies are listed in `requirements.txt`:
 
 ```text
