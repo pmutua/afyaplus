@@ -74,6 +74,12 @@ Install and prepare Ollama separately:
 ```powershell
 ollama --version
 ollama pull llama3.2
+```
+
+Start Ollama in a separate terminal before testing local fallback or latency
+comparison:
+
+```powershell
 ollama serve
 ```
 
