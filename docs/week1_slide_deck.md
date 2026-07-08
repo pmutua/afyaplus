@@ -4,6 +4,9 @@ Use this document as the source content for a 5-minute non-technical PowerPoint
 presentation. The deck should focus on the business problem, the solution, why
 the model choices make sense, and the operational risks.
 
+Published presentation:
+[Week 1 AfyaPlus Triage Engine slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
+
 ## Slide 1: Title
 
 Title:
