@@ -13,6 +13,7 @@ requirements.txt
 docs/
   week1.md
   week1_sample_outputs.md
+  week1_slide_deck.md
   week1_video_script.md
 ```
 
@@ -29,6 +30,7 @@ Docs:
 
 - [Week 1 documentation](docs/week1.md)
 - [Week 1 sample outputs](docs/week1_sample_outputs.md)
+- [Week 1 slide deck source](docs/week1_slide_deck.md)
 - [Week 1 video script](docs/week1_video_script.md)
 
 ### Week 1 Prerequisites
@@ -215,5 +217,6 @@ matching docs files, for example:
 ```text
 docs/week2.md
 docs/week2_sample_outputs.md
+docs/week2_slide_deck.md
 docs/week2_video_script.md
 ```

@@ -256,6 +256,7 @@ latency depends on Ollama availability, hardware, and selected model.
 - README prompt log and latency table: `README.md`
 - Week 1 documentation: `docs/week1.md`
 - Sample outputs: `docs/week1_sample_outputs.md`
+- Slide deck source document: `docs/week1_slide_deck.md`
 - Non-technical presentation script: `docs/week1_video_script.md`
 
 ## Operational Risks
