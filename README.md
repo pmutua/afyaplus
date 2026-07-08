@@ -30,9 +30,9 @@ Docs:
 
 - [Week 1 documentation](docs/week1.md)
 - [Week 1 sample outputs](docs/week1_sample_outputs.md)
-- [Week 1 slide deck source](docs/week1_slide_deck.md)
+<!-- - [Week 1 slide deck source](docs/week1_slide_deck.md) -->
 - [Published Week 1 slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
-- [Week 1 video script](docs/week1_video_script.md)
+<!-- - [Week 1 video script](docs/week1_video_script.md) -->
 
 ### Week 1 Prerequisites
 
