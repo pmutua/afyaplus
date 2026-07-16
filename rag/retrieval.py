@@ -6,8 +6,8 @@ environment:
 - CI: DeterministicHashEmbedding - no network call, so automated test runs
   stay fast and reproducible. Detected via the ambient CI env var most CI
   providers set automatically (e.g. GitHub Actions sets CI=true).
-- Otherwise: Ollama's OLLAMA_EMBEDDING_MODEL (default "all-minilm";
-  "embeddinggemma" is the other supported option), reachable via
+- Otherwise: Ollama's OLLAMA_EMBEDDING_MODEL (default "embeddinggemma";
+  "all-minilm" is a supported alternative), reachable via
   OLLAMA_BASE_URL. The same model backs both local development (Ollama on
   localhost) and production (self-hosted Ollama elsewhere) - only
   OLLAMA_BASE_URL differs between them. Raises a clear error if Ollama
@@ -40,7 +40,7 @@ load_dotenv()
 
 _TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 _DEFAULT_DIMENSIONS = 256
-_OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "all-minilm")
+_OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "embeddinggemma")
 
 
 class DeterministicHashEmbedding(BaseEmbedding):
