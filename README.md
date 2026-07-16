@@ -12,7 +12,7 @@ in place as an earlier-phase, foundational part of the system rather than a
 co-equal capability — see "Foundational Component" below. The root README is
 the project index. The primary product's detailed doc lives under top-level
 `docs/`; foundational/supporting components keep their docs alongside their
-code instead, under `afyaplus/<component>/docs/`. This is a continuously
+code instead, under `<component>/docs/`. This is a continuously
 evolving production system, not a per-week archive, and further capabilities
 may be added in later phases the same way.
 
@@ -20,21 +20,20 @@ may be added in later phases the same way.
 
 ```text
 triage_cli.py
-afyaplus/
-  triage/
-    engine.py
-    docs/
-      triage_engine.md
-      triage_engine_sample_outputs.md
+triage/
+  engine.py
+  docs/
+    triage_engine.md
+    triage_engine_sample_outputs.md
 requirements.txt
 .env.example
 ```
-<!-- afyaplus/triage/docs/triage_engine_slide_deck.md -->
-<!-- afyaplus/triage/docs/triage_engine_video_script.md -->
+<!-- triage/docs/triage_engine_slide_deck.md -->
+<!-- triage/docs/triage_engine_video_script.md -->
 
 ## Foundational Component: Triage Engine
 
-Implementation: `afyaplus/triage/engine.py` (CLI entrypoint: `triage_cli.py`)
+Implementation: `triage/engine.py` (CLI entrypoint: `triage_cli.py`)
 
 This was the project's original prototype, and now serves as a foundational,
 earlier-phase component rather than a co-equal capability alongside the RAG
@@ -45,11 +44,11 @@ JSON schema, and prints a one-line routing decision.
 
 Docs live with this component's code, not under the top-level `docs/`:
 
-- [Triage engine documentation](afyaplus/triage/docs/triage_engine.md)
-- [Triage engine sample outputs](afyaplus/triage/docs/triage_engine_sample_outputs.md)
-<!-- - [Triage engine slide deck source](afyaplus/triage/docs/triage_engine_slide_deck.md) -->
+- [Triage engine documentation](triage/docs/triage_engine.md)
+- [Triage engine sample outputs](triage/docs/triage_engine_sample_outputs.md)
+<!-- - [Triage engine slide deck source](triage/docs/triage_engine_slide_deck.md) -->
 - [Published slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
-<!-- - [Triage engine video script](afyaplus/triage/docs/triage_engine_video_script.md) -->
+<!-- - [Triage engine video script](triage/docs/triage_engine_video_script.md) -->
 
 ### Prerequisites
 
