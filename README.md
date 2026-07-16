@@ -1,9 +1,19 @@
-# AfyaPlus Health Platform
+# AfyaPlus Enterprise-Grade RAG-Powered Agent System
 
-This repository is a continuously evolving production system for AfyaPlus
-Health, not a per-week archive. The root README is the project index; each
-capability has its own implementation module, CLI entrypoint, and detailed
-doc under `docs/`.
+This repository's primary product is the Enterprise-Grade RAG-Powered Agent
+System for AfyaPlus Health — a medical insurance verification and clinical
+routing assistant built on a grounded LlamaIndex knowledge pipeline, a
+stateful LangGraph agent, validated functional tooling, and a PII
+masking/de-masking compliance boundary in front of and behind every model
+call. See the Roadmap section below for current build status.
+
+The repo began as a simpler Triage Engine prototype; that component remains
+in place as an earlier-phase, foundational part of the system rather than a
+co-equal capability — see "Foundational Component" below. The root README
+is the project index; each component has its own implementation module, CLI
+entrypoint, and detailed doc under `docs/`. This is a continuously evolving
+production system, not a per-week archive, and further capabilities may be
+added in later phases the same way.
 
 ## Repository Layout
 
@@ -21,11 +31,13 @@ docs/
 <!-- docs/triage_engine_slide_deck.md -->
 <!-- docs/triage_engine_video_script.md -->
 
-## Triage Engine
+## Foundational Component: Triage Engine
 
 Implementation: `afyaplus/triage/engine.py` (CLI entrypoint: `triage_cli.py`)
 
-The triage engine is a Python inference engine that converts unstructured
+This was the project's original prototype, and now serves as a foundational,
+earlier-phase component rather than a co-equal capability alongside the RAG
+Agent System. It is a Python inference engine that converts unstructured
 patient messages into strict JSON for backend routing. It calls a cloud model
 first, falls back to local Ollama when the cloud path fails, validates the
 JSON schema, and prints a one-line routing decision.
@@ -216,15 +228,14 @@ latency depends on Ollama availability, hardware, and selected model.
 
 ## Roadmap
 
-Add each new capability as its own README section above, with full detail
-kept in a matching `docs/<capability>.md` file, for example:
+**Current build — Enterprise-Grade RAG-Powered Agent System (in progress):**
+an enterprise-grade, LlamaIndex-grounded, tool-using agent for medical
+insurance verification and clinical routing, with a PII-masking/de-masking
+compliance boundary in front of and behind every model call. This is now the
+repo's primary capability. Its own README section, `docs/rag_agent_system.md`,
+and `docs/rag_agent_system_sample_outputs.md` land once the implementation is
+complete.
 
-```text
-docs/rag_agent_system.md
-docs/rag_agent_system_sample_outputs.md
-```
-
-Next planned capability: an enterprise-grade, LlamaIndex-grounded, tool-using
-agent for medical insurance verification and clinical routing, with a
-PII-masking/de-masking compliance boundary in front of and behind every model
-call.
+Add each further capability as its own README section above, with full detail
+kept in a matching `docs/<capability>.md` file, the same way this one will
+be added.
