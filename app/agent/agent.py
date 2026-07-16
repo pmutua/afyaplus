@@ -9,7 +9,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.graph.state import CompiledStateGraph
 
-from app.agent.memory import create_checkpointer
+from app.agent.memory import create_checkpointer, trim_conversation_history
 
 
 def create_agent(
@@ -24,4 +24,5 @@ def create_agent(
         tools=list(tools),
         system_prompt=system_prompt,
         checkpointer=create_checkpointer(),
+        middleware=[trim_conversation_history],
     )
