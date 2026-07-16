@@ -1,6 +1,11 @@
 # Core AI Frameworks
 llama-index
 langchain
+langchain-openai
+
+# API
+fastapi
+uvicorn[standard]
 
 # Embeddings
 llama-index-embeddings-ollama
