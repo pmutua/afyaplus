@@ -1,6 +1,0 @@
--r requirements.txt
-
-pytest
-llama-index-embeddings-huggingface
-sentence-transformers
-llama-index-embeddings-ollama

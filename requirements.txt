@@ -1,5 +1,22 @@
+# Core AI Frameworks
 llama-index
 langchain
+
+# Embeddings
+llama-index-embeddings-ollama
+
+# Vector Store
+chromadb
+llama-index-vector-stores-chroma
+
+# LLM / OpenRouter
 openai
+
+# Configuration
 python-dotenv
+
+# HTTP
 httpx
+
+# Testing
+pytest
