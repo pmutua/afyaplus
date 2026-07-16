@@ -20,3 +20,6 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Persisted vector store (rebuilt by app.rag.ingestion.build_index())
+storage/
+
