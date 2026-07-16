@@ -1,0 +1,91 @@
+AfyaPlus Health — Member Insurance Verification Policy
+(Synthetic reference document for capstone RAG grounding. Not a real
+insurance policy.)
+
+1. Plan Tiers and Coverage
+
+AfyaPlus Health offers four member plan tiers: Bronze, Silver, Gold, and
+Platinum.
+
+- Bronze covers 60% of outpatient consultation costs and 70% of inpatient
+  costs, with an annual outpatient limit of KES 50,000.
+- Silver covers 75% of outpatient costs and 80% of inpatient costs, with an
+  annual outpatient limit of KES 150,000.
+- Gold covers 85% of outpatient costs and 90% of inpatient costs, with an
+  annual outpatient limit of KES 400,000.
+- Platinum covers 100% of outpatient and inpatient costs with no annual
+  outpatient limit.
+
+All four tiers cover emergency care at 100%, regardless of pre-authorization
+status, consistent with AfyaPlus's Emergency Care Guarantee.
+
+2. Member Identification and Verification
+
+Every AfyaPlus member is issued a unique member ID in the format AP-######
+(the letters "AP", a hyphen, then six digits). Before any claim, referral, or
+insurance verification is processed, staff must confirm:
+
+- The member ID matches an active AfyaPlus account.
+- The plan status is "active", not "lapsed" or "suspended". A lapsed plan
+  has no coverage until the next premium payment clears.
+- The requested service is covered under the member's current tier.
+
+Member identity may be confirmed using the member ID together with either
+the phone number or email address on file for that account. A verification
+request is only considered complete once both the member ID and at least one
+contact identifier match AfyaPlus records.
+
+3. Waiting Periods
+
+New members are subject to the following waiting periods before coverage
+begins for non-emergency services:
+
+- General outpatient consultations: no waiting period.
+- Specialist referrals: 30-day waiting period from enrollment date.
+- Elective surgery and non-emergency inpatient procedures: 90-day waiting
+  period from enrollment date.
+- Maternity coverage: 180-day waiting period from enrollment date.
+
+Waiting periods do not apply to emergency care under any circumstances.
+
+4. Pre-Authorization Requirements
+
+The following services require pre-authorization from AfyaPlus before the
+service is rendered, except when the presenting case is a clinical
+emergency:
+
+- Any elective surgery.
+- MRI and CT imaging.
+- Specialist referrals outside of the member's assigned primary care
+  provider network.
+- Inpatient admissions expected to exceed 3 days.
+
+Pre-authorization requests are typically resolved within 2 business days.
+Emergency admissions and emergency imaging never require pre-authorization;
+they are verified retroactively within 5 business days of the emergency
+encounter.
+
+5. Claim Submission Rules
+
+Claims must be submitted within 90 days of the date of service. Claims
+submitted after this window are denied unless the delay was caused by a
+documented AfyaPlus system outage. Each claim must reference:
+
+- The member ID.
+- The date and nature of service.
+- The treating provider's registration number.
+
+6. Dependents Coverage
+
+A primary member may add a spouse and up to four dependent children under
+the age of 21 to their plan. Dependents share the primary member's plan tier
+and annual outpatient limit; they do not receive a separate limit.
+
+7. Exclusions
+
+AfyaPlus plans at all tiers exclude coverage for cosmetic procedures not
+medically necessary, experimental treatments not approved by the Kenya
+Ministry of Health, and injuries sustained during participation in
+professional contact sports. These exclusions do not apply to emergency
+stabilization care, which is always covered regardless of the underlying
+cause of injury.

@@ -1,0 +1,84 @@
+AfyaPlus Health — Clinical Routing Guidelines
+(Synthetic reference document for capstone RAG grounding. Not real
+clinical guidance. Does not replace the separate Triage Engine component.)
+
+1. Routing Destinations
+
+Every patient message is routed to exactly one of three destinations:
+
+- Emergency Medical Call Team: for cases with an immediate, life-threatening
+  danger sign. This routing bypasses all insurance pre-authorization checks
+  under the Emergency Care Guarantee.
+- Urgent Nurse Callback: for cases that are concerning but not immediately
+  life-threatening, needing clinical judgment within a few hours.
+- General Queue: for routine, non-urgent cases that can wait for a standard
+  appointment slot.
+
+2. Pregnancy Danger Signs
+
+Route to Emergency Medical Call Team if a pregnant patient reports any of:
+severe or persistent headache combined with sudden swelling of the hands,
+face, or feet; heavy vaginal bleeding; reduced or absent fetal movement past
+28 weeks; or fluid leaking before 37 weeks. A single mild symptom in
+isolation (e.g. ordinary swelling late in pregnancy with no headache) may be
+routed to Urgent Nurse Callback instead.
+
+3. Pediatric Danger Signs
+
+Route to Emergency Medical Call Team if a child presents with any of:
+fever combined with lethargy, repeated vomiting, or inability to drink
+fluids; breathing difficulty; seizure activity; or a rash that does not fade
+under pressure. A child with fever alone, active and drinking normally, may
+be routed to Urgent Nurse Callback or General Queue depending on how many
+days the fever has persisted.
+
+4. Cardiac and Respiratory Danger Signs
+
+Route to Emergency Medical Call Team for chest pain combined with shortness
+of breath, chest pain radiating to the arm or jaw, sudden severe breathing
+difficulty, or blue discoloration of the lips or fingertips. Mild, chronic,
+exertion-only shortness of breath in a patient with a known stable condition
+may be routed to Urgent Nurse Callback.
+
+5. Bleeding and Trauma
+
+Route to Emergency Medical Call Team for uncontrolled or heavy bleeding,
+suspected fracture with visible deformity, or loss of consciousness
+following any injury. Minor cuts, bruises, and stable old injuries are
+routed to General Queue.
+
+6. Mental Health Crisis
+
+Route to Emergency Medical Call Team for any explicit statement of intent
+to self-harm or harm others, or a described suicide plan. General mental
+health concerns without an immediate safety risk (e.g. ongoing low mood,
+sleep difficulty) are routed to Urgent Nurse Callback for a same-day
+clinical check-in.
+
+7. Chronic Disease Follow-Up
+
+Routine follow-up messages for previously diagnosed, currently stable
+chronic conditions — such as a diabetes patient requesting a repeat
+prescription, or a hypertension patient reporting normal home blood
+pressure readings — are routed to General Queue. A chronic disease patient
+reporting a new, severe, or worsening symptom outside their normal pattern
+should instead be evaluated under the relevant danger-sign category above.
+
+8. Interaction With Insurance Verification
+
+Clinical routing decisions are made independently of insurance status. A
+case classified as Emergency Medical Call Team is always escalated
+immediately, even if member insurance verification has not yet completed;
+insurance verification proceeds in parallel, never blocking emergency
+routing. For Urgent Nurse Callback and General Queue cases, insurance
+verification should complete before the appointment is scheduled, so the
+correct coverage tier and any pre-authorization requirements are known in
+advance.
+
+9. When Uncertain
+
+If a case does not clearly match any danger-sign category above but some
+uncertainty remains about severity, prefer the higher-urgency routing
+destination over the lower one. Under-routing a case that later escalates
+is treated as a more serious failure than a low-urgency case receiving a
+faster response than strictly required.
