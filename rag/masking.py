@@ -1,7 +1,7 @@
 """Privacy-compliance masking pipeline for the AfyaPlus RAG Agent System.
 
-PrivacyCompliancePipeline.mask() currently masks Kenyan phone numbers only.
-Email and member/patient ID masking land in SPEC-1.3/1.4; demask() lands in
+PrivacyCompliancePipeline.mask() currently masks Kenyan phone numbers and
+emails. Member/patient ID masking lands in SPEC-1.4; demask() lands in
 SPEC-1.5.
 """
 
@@ -14,6 +14,8 @@ from dataclasses import dataclass
 # 8 more digits. Lookaround guards avoid matching inside a longer digit run
 # (e.g. a member/patient ID) instead of a standalone phone number.
 _KENYAN_PHONE_PATTERN = re.compile(r"(?<!\d)(?:\+254|0)[17]\d{8}(?!\d)")
+
+_EMAIL_PATTERN = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 
 
 @dataclass(frozen=True)
@@ -54,6 +56,7 @@ class PrivacyCompliancePipeline:
 
         vault: dict[str, str] = {}
         masked_text = _mask_pattern(text, _KENYAN_PHONE_PATTERN, "PHONE", vault)
+        masked_text = _mask_pattern(masked_text, _EMAIL_PATTERN, "EMAIL", vault)
         return MaskResult(masked_text=masked_text, vault=vault)
 
     def demask(self, text: str, vault: dict[str, str]) -> str:
