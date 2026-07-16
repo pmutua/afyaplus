@@ -1,4 +1,4 @@
-"""Grounded LlamaIndex knowledge pipeline for the AfyaPlus RAG Agent System.
+"""Ollama embedding configuration for the AfyaPlus RAG Agent System.
 
 build_embedding_model() selects an embedding model for the current
 environment:
@@ -22,8 +22,8 @@ closer together in vector space here, so retrieval over it is still
 meaningful rather than random - important since it's what CI actually
 grades against for anything retrieval-shaped.
 
-Ingestion (chunking + index build, with a ChromaDB vector store) lands in
-SPEC-2.3.
+Ingestion (chunking.py), index build (ingestion.py), and the ChromaDB
+vector store config (vector_store.py) land alongside this module in SPEC-2.3.
 """
 
 from __future__ import annotations
