@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status
 from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 
@@ -13,9 +13,8 @@ from app.agent.memory import thread_config
 from app.agent.prompts import SYSTEM_PROMPT
 from app.agent.tools import calculate_medication_volume, search_afyaplus_knowledge
 from app.config import build_chat_model, load_settings
-from app.models import ChatRequest, ChatResponse, HealthResponse
-from app.safeguards.demasking import demask
-from app.safeguards.masking import mask
+from app.models import ChatResponse, HealthResponse
+from app.safeguards.middleware import PrivacyContext, protect_chat_request
 
 
 def _production_agent() -> CompiledStateGraph:
@@ -56,12 +55,13 @@ def create_app(agent: CompiledStateGraph | None = None) -> FastAPI:
         return HealthResponse(status="ok")
 
     @application.post("/chat", response_model=ChatResponse)
-    def chat(request: ChatRequest) -> ChatResponse:
-        masked = mask(request.message)
+    def chat(
+        privacy: Annotated[PrivacyContext, Depends(protect_chat_request)],
+    ) -> ChatResponse:
         try:
             result = chat_agent.invoke(
-                {"messages": [("user", masked.masked_text)]},
-                thread_config(request.thread_id),
+                {"messages": [("user", privacy.masked_message)]},
+                thread_config(privacy.thread_id),
             )
             response = _latest_response(result)
         except Exception as error:
@@ -70,8 +70,8 @@ def create_app(agent: CompiledStateGraph | None = None) -> FastAPI:
                 detail="The AfyaPlus assistant is temporarily unavailable.",
             ) from error
         return ChatResponse(
-            response=demask(response, masked.vault),
-            thread_id=request.thread_id,
+            response=privacy.restore_output(response),
+            thread_id=privacy.thread_id,
         )
 
     return application
