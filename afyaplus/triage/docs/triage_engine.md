@@ -256,11 +256,11 @@ latency depends on Ollama availability, hardware, and selected model.
 
 - CLI entrypoint: `triage_cli.py` (implementation: `afyaplus/triage/engine.py`)
 - README prompt log and latency table: `README.md`
-- Triage engine documentation: `docs/triage_engine.md`
-- Sample outputs: `docs/triage_engine_sample_outputs.md`
-<!-- - Slide deck source document: `docs/triage_engine_slide_deck.md` -->
+- Triage engine documentation: `afyaplus/triage/docs/triage_engine.md`
+- Sample outputs: `afyaplus/triage/docs/triage_engine_sample_outputs.md`
+<!-- - Slide deck source document: `afyaplus/triage/docs/triage_engine_slide_deck.md` -->
 - Published slides: https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000
-<!-- - Non-technical presentation script: `docs/triage_engine_video_script.md` -->
+<!-- - Non-technical presentation script: `afyaplus/triage/docs/triage_engine_video_script.md` -->
 
 ## Operational Risks
 

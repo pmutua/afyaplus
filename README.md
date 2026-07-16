@@ -9,11 +9,12 @@ call. See the Roadmap section below for current build status.
 
 The repo began as a simpler Triage Engine prototype; that component remains
 in place as an earlier-phase, foundational part of the system rather than a
-co-equal capability — see "Foundational Component" below. The root README
-is the project index; each component has its own implementation module, CLI
-entrypoint, and detailed doc under `docs/`. This is a continuously evolving
-production system, not a per-week archive, and further capabilities may be
-added in later phases the same way.
+co-equal capability — see "Foundational Component" below. The root README is
+the project index. The primary product's detailed doc lives under top-level
+`docs/`; foundational/supporting components keep their docs alongside their
+code instead, under `afyaplus/<component>/docs/`. This is a continuously
+evolving production system, not a per-week archive, and further capabilities
+may be added in later phases the same way.
 
 ## Repository Layout
 
@@ -22,14 +23,14 @@ triage_cli.py
 afyaplus/
   triage/
     engine.py
+    docs/
+      triage_engine.md
+      triage_engine_sample_outputs.md
 requirements.txt
 .env.example
-docs/
-  triage_engine.md
-  triage_engine_sample_outputs.md
 ```
-<!-- docs/triage_engine_slide_deck.md -->
-<!-- docs/triage_engine_video_script.md -->
+<!-- afyaplus/triage/docs/triage_engine_slide_deck.md -->
+<!-- afyaplus/triage/docs/triage_engine_video_script.md -->
 
 ## Foundational Component: Triage Engine
 
@@ -42,13 +43,13 @@ patient messages into strict JSON for backend routing. It calls a cloud model
 first, falls back to local Ollama when the cloud path fails, validates the
 JSON schema, and prints a one-line routing decision.
 
-Docs:
+Docs live with this component's code, not under the top-level `docs/`:
 
-- [Triage engine documentation](docs/triage_engine.md)
-- [Triage engine sample outputs](docs/triage_engine_sample_outputs.md)
-<!-- - [Triage engine slide deck source](docs/triage_engine_slide_deck.md) -->
+- [Triage engine documentation](afyaplus/triage/docs/triage_engine.md)
+- [Triage engine sample outputs](afyaplus/triage/docs/triage_engine_sample_outputs.md)
+<!-- - [Triage engine slide deck source](afyaplus/triage/docs/triage_engine_slide_deck.md) -->
 - [Published slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
-<!-- - [Triage engine video script](docs/triage_engine_video_script.md) -->
+<!-- - [Triage engine video script](afyaplus/triage/docs/triage_engine_video_script.md) -->
 
 ### Prerequisites
 
