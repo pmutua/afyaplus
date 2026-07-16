@@ -9,9 +9,9 @@ from llama_index.core.schema import NodeWithScore
 
 NOT_FOUND_RESPONSE = "Information not found."
 GROUNDING_SYSTEM_PROMPT = f"""
-Answer only from the retrieved AfyaPlus knowledge sources. Keep source
-citations with supported claims. If the sources do not contain enough
-information to answer the question, respond exactly:
+For policy and routing questions, answer only from the retrieved AfyaPlus
+knowledge sources. Keep source citations with supported claims. If the sources
+do not contain enough information to answer the question, respond exactly:
 {NOT_FOUND_RESPONSE}
 """.strip()
 
