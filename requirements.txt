@@ -2,4 +2,5 @@ openai
 python-dotenv
 httpx
 llama-index
+langchain
 pytest
