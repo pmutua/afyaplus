@@ -1,31 +1,186 @@
 # AfyaPlus Enterprise-Grade RAG-Powered Agent System
 
-This repository's primary product is the Enterprise-Grade RAG-Powered Agent
-System for AfyaPlus Health — a medical insurance verification and clinical
-routing assistant built on a grounded LlamaIndex knowledge pipeline, a
-stateful LangGraph agent, validated functional tooling, and a PII
-masking/de-masking compliance boundary in front of and behind every model
-call. See the Roadmap section below for current build status.
+AfyaPlus is a privacy-aware medical-insurance verification and
+clinical-routing assistant. It combines a FastAPI boundary, a tool-using
+LangChain/LangGraph agent, a grounded LlamaIndex knowledge pipeline, local
+Ollama models, persistent ChromaDB storage, and Kenyan PII masking.
 
-The repo began as a simpler Triage Engine prototype; that component remains
-in place as an earlier-phase, foundational part of the system rather than a
-co-equal capability — see "Foundational Component" below. The root README is
-the project index. The primary product's detailed doc lives under top-level
-`docs/`; foundational/supporting components keep their docs alongside their
-code instead, under `<component>/docs/`. This is a continuously
-evolving production system, not a per-week archive, and further capabilities
-may be added in later phases the same way.
+The system explains documented policy and routing guidance. It does not
+diagnose, prescribe, select medication doses, or replace qualified clinical or
+insurance review.
 
-## RAG Agent Environment
+## What Is Implemented
 
-Create the local environment file from the tracked example before starting the
-primary FastAPI application:
+- FastAPI endpoints for health checks and stateful chat.
+- Kenyan phone, email, and AfyaPlus member-ID masking before model calls.
+- Request-local de-masking immediately before an approved response is returned.
+- Semantic LlamaIndex chunking with Ollama embeddings.
+- Persistent ChromaDB vectors that reload instead of re-ingesting on restart.
+- Deterministic source validation, inline citations, and an exact
+  `Information not found.` fallback.
+- A LangChain agent with exactly two tools: grounded knowledge retrieval and a
+  validated medication-volume calculator.
+- Per-thread LangGraph memory with bounded model-visible history.
+- Automated tests for privacy, retrieval, grounding, tools, memory, and API
+  behavior.
+
+## Architecture
+
+```text
+Raw request
+  -> Pydantic validation
+  -> PII masking and request-local vault
+  -> LangChain/LangGraph agent and bounded thread memory
+       -> LlamaIndex + ChromaDB knowledge tool
+       -> validated medication-volume tool
+  -> grounded masked response
+  -> request-local de-masking
+  -> FastAPI response
+```
+
+Detailed documentation:
+
+- [Architecture](docs/architecture.md)
+- [Sequence diagrams](docs/sequence-diagram.md)
+- [Privacy safeguards](docs/privacy.md)
+- [API reference](docs/api.md)
+
+## Repository Layout
+
+```text
+app/
+  agent/                 # Agent, prompt, tools, memory, token trimming
+  models/                # Pydantic request and response schemas
+  rag/                   # Chunking, embeddings, ingestion, retrieval, grounding
+  safeguards/            # PII patterns, masking, de-masking, API dependency
+  config.py              # Ollama chat-model configuration
+  main.py                # FastAPI application
+docs/                    # Primary product documentation
+knowledge/               # Local insurance and clinical-routing manuals
+tests/                   # Automated test suite
+triage/                  # Foundational Week 1 triage engine
+triage_cli.py             # Foundational triage CLI entrypoint
+.env.example             # Safe configuration template
+requirements.txt         # Python dependencies
+```
+
+## Prerequisites
+
+- Python 3.11 or newer.
+- `pip` and Python virtual-environment support.
+- Ollama installed on the host operating system.
+- Enough local memory to run `llama3.2` and `embeddinggemma`.
+
+Install Ollama from its official platform page:
+
+| Platform | Official installer |
+|---|---|
+| Windows | [Ollama for Windows](https://ollama.com/download/windows) |
+| Linux | [Ollama for Linux](https://ollama.com/download/linux) |
+| macOS | [Ollama for macOS](https://ollama.com/download/mac) |
+
+After installation, open a new terminal and verify Ollama:
+
+```text
+ollama --version
+ollama list
+```
+
+Desktop installers normally run Ollama in the background. If it is not
+running, start it in a separate terminal with `ollama serve`. If that command
+reports that port `11434` is already in use, an Ollama service is already
+running; do not start a second instance.
+
+## Quick Start
+
+Run all commands from the repository root—the directory containing
+`requirements.txt` and `app/`.
+
+### Windows PowerShell
+
+Create the environment and install dependencies:
 
 ```powershell
+py -3 -m venv .venv
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-The served RAG agent reads these variables:
+Pull the local models and start the API:
+
+```powershell
+ollama pull llama3.2
+ollama pull embeddinggemma
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Without activating the virtual environment, use:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+### Linux
+
+Create the environment and install dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+```
+
+Pull the local models and start the API:
+
+```bash
+ollama pull llama3.2
+ollama pull embeddinggemma
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Without activating the virtual environment, use:
+
+```bash
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+If `python3 -m venv` is unavailable, install the virtual-environment package
+provided by your Linux distribution, then repeat the command.
+
+### macOS
+
+Create the environment and install dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+cp .env.example .env
+```
+
+Pull the local models and start the API:
+
+```bash
+ollama pull llama3.2
+ollama pull embeddinggemma
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+Without activating the virtual environment, use:
+
+```bash
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+## Environment Configuration
+
+The RAG API works with the safe local defaults in `.env.example`:
 
 | Variable | Default | Purpose |
 |---|---|---|
@@ -38,235 +193,164 @@ The served RAG agent reads these variables:
 | `CHROMA_STORAGE_DIR` | `storage/chroma` | Persistent vector-store directory |
 | `CHROMA_COLLECTION_NAME` | `afyaplus_knowledge_base` | Chroma collection name |
 
-The `CI` variable is an ambient automation flag, not a local `.env` setting.
-When present, it selects the deterministic test embedding instead of calling
-Ollama. The cloud variables documented under the foundational triage engine
-are not read by the served RAG agent.
+`CI` is an ambient automation flag, not a local `.env` setting. When present,
+it selects a deterministic test embedding instead of contacting Ollama.
 
-See [API setup](docs/api.md) for the run command and
-[runtime architecture](docs/architecture.md#runtime-configuration) for the
-configuration design. Never commit the real `.env` file.
+The cloud variables in `.env.example` belong to the foundational triage
+engine. The served RAG API does not read them. Never commit the real `.env`;
+Git excludes `.env` and persisted `storage/` data.
 
-## Repository Layout
+## Verify the API
 
-```text
-triage_cli.py
-triage/
-  engine.py
-  docs/
-    triage_engine.md
-    triage_engine_sample_outputs.md
-requirements.txt
-.env.example
-```
-<!-- triage/docs/triage_engine_slide_deck.md -->
-<!-- triage/docs/triage_engine_video_script.md -->
+When Uvicorn reports that it is running on `http://127.0.0.1:8000`, open:
 
-## Foundational Component: Triage Engine
+- Swagger UI: `http://127.0.0.1:8000/docs`
+- OpenAPI schema: `http://127.0.0.1:8000/openapi.json`
+- Health endpoint: `http://127.0.0.1:8000/health`
 
-Implementation: `triage/engine.py` (CLI entrypoint: `triage_cli.py`)
-
-This was the project's original prototype, and now serves as a foundational,
-earlier-phase component rather than a co-equal capability alongside the RAG
-Agent System. It is a Python inference engine that converts unstructured
-patient messages into strict JSON for backend routing. It calls a cloud model
-first, falls back to local Ollama when the cloud path fails, validates the
-JSON schema, and prints a one-line routing decision.
-
-Docs live with this component's code, not under the top-level `docs/`:
-
-- [Triage engine documentation](triage/docs/triage_engine.md)
-- [Triage engine sample outputs](triage/docs/triage_engine_sample_outputs.md)
-<!-- - [Triage engine slide deck source](triage/docs/triage_engine_slide_deck.md) -->
-- [Published slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
-<!-- - [Triage engine video script](triage/docs/triage_engine_video_script.md) -->
-
-### Prerequisites
-
-- Python 3.11 or newer.
-- A virtual environment inside this repository: `.venv`.
-- Cloud API key in `.env`: use `OPENROUTER_API_KEY` with OpenRouter settings
-  or `OPENAI_API_KEY` with direct OpenAI settings.
-- Ollama installed as a system dependency for local fallback.
-- Local model pulled with `ollama pull llama3.2`.
-
-### Setup And Run
-
-From the repository root, create and activate the virtual environment:
+### Windows PowerShell Request
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
+$body = @{
+    message = "What documents are required for member verification?"
+    thread_id = "demo-session-001"
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://127.0.0.1:8000/chat" `
+    -ContentType "application/json" `
+    -Body $body
 ```
 
-Install dependencies:
+### Linux and macOS Request
+
+```bash
+curl -X POST http://127.0.0.1:8000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "message": "What documents are required for member verification?",
+    "thread_id": "demo-session-001"
+  }'
+```
+
+Expected response shape:
+
+```json
+{
+  "response": "A grounded answer with inline source citations.",
+  "thread_id": "demo-session-001"
+}
+```
+
+Reuse a valid non-PII `thread_id` for related turns. A process restart clears
+the current in-memory conversation history.
+
+## Run Tests
+
+Install dependencies first, then run the suite from the repository root.
+
+Windows PowerShell:
 
 ```powershell
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pytest -q
 ```
 
-Create and configure the environment file:
+Linux and macOS:
 
-```powershell
-Copy-Item .env.example .env
+```bash
+.venv/bin/python -m pytest -q
 ```
 
-Edit `.env` after copying it. Choose one cloud provider option, then keep the
-local Ollama settings for fallback.
+Tests use deterministic embeddings where `CI` is set and fake chat models for
+model-boundary assertions. They do not require real patient information.
 
-Cloud configuration options, choose one:
+## Orchestration and Grounding Decisions
+
+- LangChain provides the agent and typed tool interface; LangGraph provides
+  checkpointed state by `thread_id`.
+- The agent exposes exactly two narrow tools to reduce tool confusion.
+- LlamaIndex performs semantic chunking and returns source nodes without an
+  additional synthesis model.
+- ChromaDB persists locally generated vectors and reloads a populated
+  collection instead of duplicating ingestion.
+- Retrieved nodes must share substantive normalized terms with the question.
+  Unsupported retrieval returns exactly `Information not found.`
+- Every retained policy or routing excerpt includes its source filename.
+
+## Token Management
+
+The local `llama3.2` model uses a 4,096-token context in the current setup.
+`AGENT_HISTORY_TOKEN_BUDGET` defaults to 2,048 approximate tokens. Before each
+model call, middleware keeps recent complete turns and reserves the remaining
+context for the system prompt, tool schemas, retrieved evidence, and output.
+
+The complete masked checkpoint remains in process while only the bounded slice
+is sent to the model. Approximate counting is fast and model-independent, but
+it is not identical to llama3.2's tokenizer.
+
+## Privacy and Compliance Guardrails
+
+The safeguards are designed to support principles in Kenya's
+[Data Protection Act, 2019](https://new.kenyalaw.org/akn/ke/act/2019/24/eng@2022-12-31).
+This implementation is a technical prototype, not a legal compliance
+certification.
+
+| Principle | AfyaPlus control |
+|---|---|
+| Data minimization | Supported phone numbers, emails, and member IDs are replaced before agent, model, memory, or tool processing. The request-local vault contains only values needed to restore that request's approved output. |
+| Purpose limitation | The prompt and tool descriptions restrict processing to documented insurance verification, clinical routing, and clinician-supplied arithmetic. Diagnosis, prescribing, and dose selection are prohibited. |
+| Security safeguards | Ollama and ChromaDB run locally by default; `.env` and vector storage are excluded from Git; the vault is excluded from normal representations; unhandled failures return a generic 503 response. |
+
+Additional controls:
+
+- User and retrieved text are treated as untrusted data, not instructions.
+- Unknown placeholders are never expanded.
+- Knowledge claims require retrieved evidence and inline citations.
+- Invalid calculator inputs return controlled errors instead of crashing.
+- Uncertainty and clinical-risk decisions are escalated to qualified humans.
+- Tests prove that supported raw PII does not reach the fake model boundary.
+
+Regex masking does not detect every possible identifier or phone formatting
+variation. Names, addresses, national IDs, and formatted numbers containing
+spaces or hyphens require additional controls before real patient use. See the
+[privacy documentation](docs/privacy.md) for the full threat model.
+
+## Current Operational Limitations
+
+- No authentication, authorization, rate limiting, or production audit sink.
+- Conversation memory is process-local and is not shared across workers.
+- Health checks report process liveness, not Ollama or ChromaDB readiness.
+- Local model quality and latency depend on host hardware.
+- Human review remains required for clinical risk and benefits decisions.
+- Docker and deployment packaging are intentionally deferred until after the
+  course capstone.
+
+Do not expose this prototype to untrusted networks or process real patient data
+without production security, privacy, retention, monitoring, and governance
+controls.
+
+## Foundational Triage Engine
+
+The repository retains its original Week 1 triage prototype in `triage/`, with
+`triage_cli.py` as its entrypoint. It calls a configured cloud model first,
+falls back to local Ollama, validates strict JSON, and applies conservative
+routing checks.
+
+Its cloud settings are the `OPENROUTER_API_KEY` or `OPENAI_API_KEY` option,
+`MODEL_BASE_URL`, and `CLOUD_MODEL` values in `.env.example`.
+
+Run it from the repository root after installing the shared requirements:
 
 ```text
-# Option A: OpenRouter
-OPENROUTER_API_KEY=...
-MODEL_BASE_URL=https://openrouter.ai/api/v1
-CLOUD_MODEL=openai/gpt-4o-mini
-
-# Option B: Direct OpenAI
-OPENAI_API_KEY=...
-MODEL_BASE_URL=https://api.openai.com/v1
-CLOUD_MODEL=gpt-4o-mini
-```
-
-Do not configure both cloud options for normal use. The app has one cloud
-inference path, and OpenRouter is checked first if both keys are present.
-OpenRouter and direct OpenAI are alternatives for reaching a GPT-4o-mini class
-cloud model, not two separate cloud fallbacks.
-
-Local Ollama configuration:
-
-```text
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=llama3.2
-OLLAMA_API_KEY=ollama
-LOCAL_TIMEOUT_SECONDS=20.0
-```
-
-Keep the local settings because the application is designed to try cloud first
-and then fall back to Ollama if the cloud request fails, times out, returns
-invalid JSON, or cannot be reached. The cloud path gives stronger and faster
-reasoning when the network is healthy. The local path keeps the triage engine
-usable during cloud or network failure.
-
-Example final `.env` using OpenRouter:
-
-```text
-OPENROUTER_API_KEY=sk-or-your-real-key
-MODEL_BASE_URL=https://openrouter.ai/api/v1
-CLOUD_MODEL=openai/gpt-4o-mini
-
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=llama3.2
-OLLAMA_API_KEY=ollama
-LOCAL_TIMEOUT_SECONDS=20.0
-```
-
-Example final `.env` using direct OpenAI:
-
-```text
-OPENAI_API_KEY=sk-your-real-openai-key
-MODEL_BASE_URL=https://api.openai.com/v1
-CLOUD_MODEL=gpt-4o-mini
-
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=llama3.2
-OLLAMA_API_KEY=ollama
-LOCAL_TIMEOUT_SECONDS=20.0
-```
-
-Never commit the real `.env` file.
-
-Required Python dependencies are listed in `requirements.txt`:
-
-```text
-openai
-python-dotenv
-httpx
-```
-
-Ollama is not listed in `requirements.txt` because this app does not import a
-Python `ollama` package. It calls Ollama through the local OpenAI-compatible HTTP
-endpoint at `http://localhost:11434/v1`.
-
-Install and prepare Ollama separately:
-
-```powershell
-ollama --version
-ollama pull llama3.2
-```
-
-Start Ollama in a separate terminal before testing local fallback or latency
-comparison:
-
-```powershell
-ollama serve
-```
-
-Run the application:
-
-```powershell
 python triage_cli.py --help
 python triage_cli.py
 python triage_cli.py "My chest hurts and I cannot breathe properly"
 python triage_cli.py --simulate-cloud-failure "My child has a fever and is very weak"
-python triage_cli.py --compare-latency "I have had a headache for two days"
 ```
 
-If the virtual environment is not activated, use:
+Foundational component resources:
 
-```powershell
-.\.venv\Scripts\python.exe triage_cli.py
-```
-
-### Prompt Engineering Log
-
-| Version | Pattern | What happened | Why it changed |
-|---|---|---|---|
-| V1 | Simple urgency request | Could produce conversational prose | Backend needs predictable structured data |
-| V2 | Role plus JSON instruction | Better shape, but weak safety boundaries | Needed stronger protection against hallucination and prompt injection |
-| V3 | Defensive triage routing engine | Best fit for automation | Adds untrusted-input handling, private danger-sign checking, no diagnosis, no prescriptions, no markdown, exact JSON |
-
-### Guardrail Rationale
-
-- Patient messages are treated as data, not instructions, to reduce prompt
-  injection risk.
-- The model is blocked from diagnosis, prescriptions, and dosage calculations
-  because this prototype only routes cases.
-- Conversational openings, apologies, and markdown are banned so the backend can
-  parse raw JSON reliably.
-- High-risk patterns are checked again after parsing so obvious danger signs are
-  not under-routed if the model response is weak.
-
-### Baseline Latency
-
-Run:
-
-```powershell
-python triage_cli.py --compare-latency "I have had a headache for two days"
-```
-
-Observed on July 7, 2026 across three runs:
-
-| Run | Cloud status | Cloud seconds | Local status | Local seconds |
-|---:|---|---:|---|---:|
-| 1 | success | 2.26 | success | 7.75 |
-| 2 | success | 2.40 | success | 7.79 |
-| 3 | success | 2.17 | success | 7.77 |
-| Average | success | 2.28 | success | 7.77 |
-
-This confirms both cloud and local Ollama paths completed successfully. Local
-latency depends on Ollama availability, hardware, and selected model.
-
-## Roadmap
-
-**Current build — Enterprise-Grade RAG-Powered Agent System (in progress):**
-an enterprise-grade, LlamaIndex-grounded, tool-using agent for medical
-insurance verification and clinical routing, with a PII-masking/de-masking
-compliance boundary in front of and behind every model call. This is now the
-repo's primary capability. Its own README section, `docs/rag_agent_system.md`,
-and `docs/rag_agent_system_sample_outputs.md` land once the implementation is
-complete.
-
-Add each further capability as its own README section above, with full detail
-kept in a matching `docs/<capability>.md` file, the same way this one will
-be added.
+- [Triage engine documentation](triage/docs/triage_engine.md)
+- [Sample outputs](triage/docs/triage_engine_sample_outputs.md)
+- [Published slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
