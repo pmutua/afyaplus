@@ -1,13 +1,19 @@
 """Privacy-compliance masking pipeline for the AfyaPlus RAG Agent System.
 
-Scaffolding only: PrivacyCompliancePipeline defines the mask/demask contract.
-Regex-based PII detection (Kenyan phone numbers, emails, member/patient IDs)
-lands in the following SPEC-1 tasks.
+PrivacyCompliancePipeline.mask() currently masks Kenyan phone numbers only.
+Email and member/patient ID masking land in SPEC-1.3/1.4; demask() lands in
+SPEC-1.5.
 """
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
+
+# +254 or a leading 0, then a Safaricom/Airtel/Telkom range (7XX or 1XX) and
+# 8 more digits. Lookaround guards avoid matching inside a longer digit run
+# (e.g. a member/patient ID) instead of a standalone phone number.
+_KENYAN_PHONE_PATTERN = re.compile(r"(?<!\d)(?:\+254|0)[17]\d{8}(?!\d)")
 
 
 @dataclass(frozen=True)
@@ -22,6 +28,20 @@ class MaskResult:
     vault: dict[str, str]
 
 
+def _mask_pattern(text: str, pattern: re.Pattern[str], label: str, vault: dict[str, str]) -> str:
+    """Replace every match of `pattern` in `text` with a unique placeholder token.
+
+    Each original match is recorded in `vault` keyed by its placeholder token.
+    """
+
+    def _replace(match: re.Match[str]) -> str:
+        token = f"<<{label}_{len(vault) + 1}>>"
+        vault[token] = match.group(0)
+        return token
+
+    return pattern.sub(_replace, text)
+
+
 class PrivacyCompliancePipeline:
     """Masks PII before a model call, and restores it after, via a token vault."""
 
@@ -32,7 +52,9 @@ class PrivacyCompliancePipeline:
         original value it replaced.
         """
 
-        raise NotImplementedError
+        vault: dict[str, str] = {}
+        masked_text = _mask_pattern(text, _KENYAN_PHONE_PATTERN, "PHONE", vault)
+        return MaskResult(masked_text=masked_text, vault=vault)
 
     def demask(self, text: str, vault: dict[str, str]) -> str:
         """Restore placeholder tokens in `text` to their original values using `vault`."""
