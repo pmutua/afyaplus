@@ -1,4 +1,4 @@
-# Week 1 Sample Outputs
+# Triage Engine Sample Outputs
 
 These examples demonstrate three required scenarios. Exact wording can vary by
 model, but the JSON shape and route values must remain stable.
@@ -8,7 +8,7 @@ model, but the JSON shape and route values must remain stable.
 Command:
 
 ```powershell
-python app.py
+python triage_cli.py
 ```
 
 Expected route: `Emergency Medical Call Team`
@@ -43,7 +43,7 @@ ROUTE NOW: send case to Emergency Medical Call Team.
 Command:
 
 ```powershell
-python app.py "My chest hurts and I cannot breathe properly"
+python triage_cli.py "My chest hurts and I cannot breathe properly"
 ```
 
 Expected route: `Emergency Medical Call Team`
@@ -78,7 +78,7 @@ ROUTE NOW: send case to Emergency Medical Call Team.
 Command:
 
 ```powershell
-python app.py --simulate-cloud-failure "My child has a fever and is very weak"
+python triage_cli.py --simulate-cloud-failure "My child has a fever and is very weak"
 ```
 
 Expected behavior:

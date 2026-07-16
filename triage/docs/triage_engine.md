@@ -1,12 +1,13 @@
-# Week 1: AfyaPlus Triage Engine
+# AfyaPlus Triage Engine
 
 ## Brief
 
-AfyaPlus receives unstructured patient messages. The Week 1 task is to turn
-those messages into predictable machine-readable routing decisions while
-handling cloud failures safely.
+AfyaPlus receives unstructured patient messages. This capability turns those
+messages into predictable machine-readable routing decisions while handling
+cloud failures safely.
 
-The implemented solution is `app.py`.
+The implemented solution is `afyaplus/triage/engine.py`, run via the
+`triage_cli.py` CLI entrypoint.
 
 ## Key Terms
 
@@ -25,16 +26,17 @@ app, the model maps messages to one of three backend routes:
 - `General Queue`
 
 General symptom triage means assessing any patient message, identifying the
-reported symptoms, deciding urgency, and recommending the next routing step. The
-Week 1 app mainly implements general symptom triage with extra guardrails for
-known danger signs, including pregnancy danger signs, chest pain with breathing
-difficulty, severe bleeding, confusion, and serious child illness.
+reported symptoms, deciding urgency, and recommending the next routing step.
+The triage engine mainly implements general symptom triage with extra
+guardrails for known danger signs, including pregnancy danger signs, chest
+pain with breathing difficulty, severe bleeding, confusion, and serious child
+illness.
 
-| Task | Focus | How Week 1 uses it |
+| Task | Focus | How the triage engine uses it |
 |---|---|---|
 | Preeclampsia detection | One pregnancy complication | Used as a danger-sign pattern, not a diagnosis |
 | Urgency classification | How fast care is needed | Converts messages into emergency, urgent, or routine routing |
-| General symptom triage | Broad symptom assessment | Main task implemented by `app.py` |
+| General symptom triage | Broad symptom assessment | Main task implemented by `afyaplus/triage/engine.py` |
 
 ## Requirements Mapping
 
@@ -53,7 +55,7 @@ difficulty, severe bleeding, confusion, and serious child illness.
 
 ## Prerequisites
 
-Before running Week 1, confirm these are available:
+Before running the triage engine, confirm these are available:
 
 - Python 3.11 or newer.
 - A project virtual environment at `.venv` inside this repository.
@@ -161,37 +163,37 @@ ollama serve
 Show all CLI options:
 
 ```powershell
-python app.py --help
+python triage_cli.py --help
 ```
 
 Run the default pregnancy danger-sign case:
 
 ```powershell
-python app.py
+python triage_cli.py
 ```
 
 Run a custom message:
 
 ```powershell
-python app.py "My chest hurts and I cannot breathe properly"
+python triage_cli.py "My chest hurts and I cannot breathe properly"
 ```
 
 Force the cloud path to fail and demonstrate fallback:
 
 ```powershell
-python app.py --simulate-cloud-failure "My child has a fever and is very weak"
+python triage_cli.py --simulate-cloud-failure "My child has a fever and is very weak"
 ```
 
 Compare cloud and local latency:
 
 ```powershell
-python app.py --compare-latency "I have had a headache for two days"
+python triage_cli.py --compare-latency "I have had a headache for two days"
 ```
 
 Run without activating the virtual environment:
 
 ```powershell
-.\.venv\Scripts\python.exe app.py
+.\.venv\Scripts\python.exe triage_cli.py
 ```
 
 ## JSON Schema
@@ -235,7 +237,7 @@ Allowed routes:
 Run before submission:
 
 ```powershell
-python app.py --compare-latency "I have had a headache for two days"
+python triage_cli.py --compare-latency "I have had a headache for two days"
 ```
 
 Observed on July 7, 2026 across three runs:
@@ -252,13 +254,13 @@ latency depends on Ollama availability, hardware, and selected model.
 
 ## Deliverables
 
-- App: `app.py`
+- CLI entrypoint: `triage_cli.py` (implementation: `afyaplus/triage/engine.py`)
 - README prompt log and latency table: `README.md`
-- Week 1 documentation: `docs/week1.md`
-- Sample outputs: `docs/week1_sample_outputs.md`
-- Slide deck source document: `docs/week1_slide_deck.md`
+- Triage engine documentation: `afyaplus/triage/docs/triage_engine.md`
+- Sample outputs: `afyaplus/triage/docs/triage_engine_sample_outputs.md`
+<!-- - Slide deck source document: `afyaplus/triage/docs/triage_engine_slide_deck.md` -->
 - Published slides: https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000
-- Non-technical presentation script: `docs/week1_video_script.md`
+<!-- - Non-technical presentation script: `afyaplus/triage/docs/triage_engine_video_script.md` -->
 
 ## Operational Risks
 

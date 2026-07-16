@@ -1,40 +1,56 @@
-# AfyaPlus Cumulative Capstone
+# AfyaPlus Enterprise-Grade RAG-Powered Agent System
 
-This repository grows by week. The root README is the project index and current
-submission summary. Week-specific notes, presentation scripts, and sample
-outputs live in `docs/`.
+This repository's primary product is the Enterprise-Grade RAG-Powered Agent
+System for AfyaPlus Health — a medical insurance verification and clinical
+routing assistant built on a grounded LlamaIndex knowledge pipeline, a
+stateful LangGraph agent, validated functional tooling, and a PII
+masking/de-masking compliance boundary in front of and behind every model
+call. See the Roadmap section below for current build status.
+
+The repo began as a simpler Triage Engine prototype; that component remains
+in place as an earlier-phase, foundational part of the system rather than a
+co-equal capability — see "Foundational Component" below. The root README is
+the project index. The primary product's detailed doc lives under top-level
+`docs/`; foundational/supporting components keep their docs alongside their
+code instead, under `<component>/docs/`. This is a continuously
+evolving production system, not a per-week archive, and further capabilities
+may be added in later phases the same way.
 
 ## Repository Layout
 
 ```text
-app.py
+triage_cli.py
+triage/
+  engine.py
+  docs/
+    triage_engine.md
+    triage_engine_sample_outputs.md
 requirements.txt
 .env.example
-docs/
-  week1.md
-  week1_sample_outputs.md
-  week1_slide_deck.md
-  week1_video_script.md
 ```
+<!-- triage/docs/triage_engine_slide_deck.md -->
+<!-- triage/docs/triage_engine_video_script.md -->
 
-## Week 1: Triage Engine
+## Foundational Component: Triage Engine
 
-Implementation: `app.py`
+Implementation: `triage/engine.py` (CLI entrypoint: `triage_cli.py`)
 
-Week 1 builds a Python inference engine that converts unstructured patient
-messages into strict JSON for backend routing. It calls a cloud model first,
-falls back to local Ollama when the cloud path fails, validates the JSON schema,
-and prints a one-line routing decision.
+This was the project's original prototype, and now serves as a foundational,
+earlier-phase component rather than a co-equal capability alongside the RAG
+Agent System. It is a Python inference engine that converts unstructured
+patient messages into strict JSON for backend routing. It calls a cloud model
+first, falls back to local Ollama when the cloud path fails, validates the
+JSON schema, and prints a one-line routing decision.
 
-Docs:
+Docs live with this component's code, not under the top-level `docs/`:
 
-- [Week 1 documentation](docs/week1.md)
-- [Week 1 sample outputs](docs/week1_sample_outputs.md)
-<!-- - [Week 1 slide deck source](docs/week1_slide_deck.md) -->
-- [Published Week 1 slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
-<!-- - [Week 1 video script](docs/week1_video_script.md) -->
+- [Triage engine documentation](triage/docs/triage_engine.md)
+- [Triage engine sample outputs](triage/docs/triage_engine_sample_outputs.md)
+<!-- - [Triage engine slide deck source](triage/docs/triage_engine_slide_deck.md) -->
+- [Published slides](https://docs.google.com/presentation/d/e/2PACX-1vQD_5HJ-tt-xmST0p_DmFGOLQqflMh_aHLZffcVLEEQtt863cSO5jotVzHmZmXdOg-0SYz39J_Aqr5U/pub?start=false&loop=false&delayms=3000)
+<!-- - [Triage engine video script](triage/docs/triage_engine_video_script.md) -->
 
-### Week 1 Prerequisites
+### Prerequisites
 
 - Python 3.11 or newer.
 - A virtual environment inside this repository: `.venv`.
@@ -43,7 +59,7 @@ Docs:
 - Ollama installed as a system dependency for local fallback.
 - Local model pulled with `ollama pull llama3.2`.
 
-### Week 1 Setup And Run
+### Setup And Run
 
 From the repository root, create and activate the virtual environment:
 
@@ -158,20 +174,20 @@ ollama serve
 Run the application:
 
 ```powershell
-python app.py --help
-python app.py
-python app.py "My chest hurts and I cannot breathe properly"
-python app.py --simulate-cloud-failure "My child has a fever and is very weak"
-python app.py --compare-latency "I have had a headache for two days"
+python triage_cli.py --help
+python triage_cli.py
+python triage_cli.py "My chest hurts and I cannot breathe properly"
+python triage_cli.py --simulate-cloud-failure "My child has a fever and is very weak"
+python triage_cli.py --compare-latency "I have had a headache for two days"
 ```
 
 If the virtual environment is not activated, use:
 
 ```powershell
-.\.venv\Scripts\python.exe app.py
+.\.venv\Scripts\python.exe triage_cli.py
 ```
 
-### Week 1 Prompt Engineering Log
+### Prompt Engineering Log
 
 | Version | Pattern | What happened | Why it changed |
 |---|---|---|---|
@@ -179,7 +195,7 @@ If the virtual environment is not activated, use:
 | V2 | Role plus JSON instruction | Better shape, but weak safety boundaries | Needed stronger protection against hallucination and prompt injection |
 | V3 | Defensive triage routing engine | Best fit for automation | Adds untrusted-input handling, private danger-sign checking, no diagnosis, no prescriptions, no markdown, exact JSON |
 
-### Week 1 Guardrail Rationale
+### Guardrail Rationale
 
 - Patient messages are treated as data, not instructions, to reduce prompt
   injection risk.
@@ -190,12 +206,12 @@ If the virtual environment is not activated, use:
 - High-risk patterns are checked again after parsing so obvious danger signs are
   not under-routed if the model response is weak.
 
-### Week 1 Baseline Latency
+### Baseline Latency
 
 Run:
 
 ```powershell
-python app.py --compare-latency "I have had a headache for two days"
+python triage_cli.py --compare-latency "I have had a headache for two days"
 ```
 
 Observed on July 7, 2026 across three runs:
@@ -210,14 +226,16 @@ Observed on July 7, 2026 across three runs:
 This confirms both cloud and local Ollama paths completed successfully. Local
 latency depends on Ollama availability, hardware, and selected model.
 
-## Future Weeks
+## Roadmap
 
-Add each new week as its own README section and keep the full details in
-matching docs files, for example:
+**Current build — Enterprise-Grade RAG-Powered Agent System (in progress):**
+an enterprise-grade, LlamaIndex-grounded, tool-using agent for medical
+insurance verification and clinical routing, with a PII-masking/de-masking
+compliance boundary in front of and behind every model call. This is now the
+repo's primary capability. Its own README section, `docs/rag_agent_system.md`,
+and `docs/rag_agent_system_sample_outputs.md` land once the implementation is
+complete.
 
-```text
-docs/week2.md
-docs/week2_sample_outputs.md
-docs/week2_slide_deck.md
-docs/week2_video_script.md
-```
+Add each further capability as its own README section above, with full detail
+kept in a matching `docs/<capability>.md` file, the same way this one will
+be added.
