@@ -16,6 +16,37 @@ code instead, under `<component>/docs/`. This is a continuously
 evolving production system, not a per-week archive, and further capabilities
 may be added in later phases the same way.
 
+## RAG Agent Environment
+
+Create the local environment file from the tracked example before starting the
+primary FastAPI application:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+The served RAG agent reads these variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible Ollama endpoint |
+| `OLLAMA_MODEL` | `llama3.2` | Local chat model |
+| `OLLAMA_API_KEY` | `ollama` | Compatibility value required by the client |
+| `LOCAL_TIMEOUT_SECONDS` | `20.0` | Chat-model request timeout |
+| `AGENT_HISTORY_TOKEN_BUDGET` | `2048` | Approximate history tokens sent per model call |
+| `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Semantic chunking and retrieval embedding model |
+| `CHROMA_STORAGE_DIR` | `storage/chroma` | Persistent vector-store directory |
+| `CHROMA_COLLECTION_NAME` | `afyaplus_knowledge_base` | Chroma collection name |
+
+The `CI` variable is an ambient automation flag, not a local `.env` setting.
+When present, it selects the deterministic test embedding instead of calling
+Ollama. The cloud variables documented under the foundational triage engine
+are not read by the served RAG agent.
+
+See [API setup](docs/api.md) for the run command and
+[runtime architecture](docs/architecture.md#runtime-configuration) for the
+configuration design. Never commit the real `.env` file.
+
 ## Repository Layout
 
 ```text
