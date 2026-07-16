@@ -8,15 +8,44 @@ of re-ingest" check on top of this).
 from __future__ import annotations
 
 import os
+from dataclasses import dataclass
+from pathlib import Path
 
 import chromadb
 from llama_index.vector_stores.chroma import ChromaVectorStore
 
-_STORAGE_DIR = os.getenv("CHROMA_STORAGE_DIR", "storage/chroma")
-_COLLECTION_NAME = os.getenv("CHROMA_COLLECTION_NAME", "afyaplus_knowledge_base")
+_DEFAULT_STORAGE_DIR = "storage/chroma"
+_DEFAULT_COLLECTION_NAME = "afyaplus_knowledge_base"
 
 
-def build_vector_store() -> ChromaVectorStore:
+@dataclass(frozen=True)
+class VectorStoreHandle:
+    """A persistent vector store and whether it already contains nodes."""
+
+    vector_store: ChromaVectorStore
+    has_nodes: bool
+
+
+def open_vector_store(
+    storage_dir: str | Path | None = None,
+    collection_name: str | None = None,
+) -> VectorStoreHandle:
+    """Open the persistent collection and report whether it has indexed nodes."""
+
+    resolved_dir = storage_dir or os.getenv("CHROMA_STORAGE_DIR", _DEFAULT_STORAGE_DIR)
+    resolved_name = collection_name or os.getenv(
+        "CHROMA_COLLECTION_NAME", _DEFAULT_COLLECTION_NAME
+    )
+    client = chromadb.PersistentClient(path=str(resolved_dir))
+    collection = client.get_or_create_collection(resolved_name, embedding_function=None)
+    vector_store = ChromaVectorStore(chroma_collection=collection)
+    return VectorStoreHandle(vector_store=vector_store, has_nodes=collection.count() > 0)
+
+
+def build_vector_store(
+    storage_dir: str | Path | None = None,
+    collection_name: str | None = None,
+) -> ChromaVectorStore:
     """Build the ChromaDB-backed vector store, persisted to CHROMA_STORAGE_DIR.
 
     embedding_function=None keeps Chroma from ever computing its own
@@ -25,6 +54,4 @@ def build_vector_store() -> ChromaVectorStore:
     embedder (which would need its own model download) is never invoked.
     """
 
-    client = chromadb.PersistentClient(path=_STORAGE_DIR)
-    collection = client.get_or_create_collection(_COLLECTION_NAME, embedding_function=None)
-    return ChromaVectorStore(chroma_collection=collection)
+    return open_vector_store(storage_dir, collection_name).vector_store
