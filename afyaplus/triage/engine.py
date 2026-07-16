@@ -1,11 +1,13 @@
-"""AfyaPlus Triage Engine capstone application.
+"""AfyaPlus Triage Engine.
 
-Run:
-    python app.py "My chest hurts and I cannot breathe properly"
+Converts unstructured patient messages into strict JSON for backend routing,
+with cloud-then-local-Ollama fallback. Run via the repo-root CLI entrypoint:
+
+    python triage_cli.py "My chest hurts and I cannot breathe properly"
 
 Optional:
-    python app.py --simulate-cloud-failure "I have a severe headache and swollen feet at 7 months pregnant"
-    python app.py --compare-latency
+    python triage_cli.py --simulate-cloud-failure "I have a severe headache and swollen feet at 7 months pregnant"
+    python triage_cli.py --compare-latency
 """
 
 from __future__ import annotations
