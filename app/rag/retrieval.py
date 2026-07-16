@@ -7,6 +7,7 @@ from pathlib import Path
 from llama_index.core.base.base_query_engine import BaseQueryEngine
 from llama_index.core.schema import NodeWithScore
 
+from app.rag.grounding import NOT_FOUND_RESPONSE, select_grounded_sources
 from app.rag.ingestion import build_index
 
 
@@ -64,6 +65,7 @@ def query_knowledge(
         similarity_top_k,
     )
     response = query_engine.query(question)
-    if not response.source_nodes:
-        return "No knowledge sources were retrieved."
-    return "\n\n".join(_format_source(node) for node in response.source_nodes)
+    grounded_sources = select_grounded_sources(question, response.source_nodes)
+    if not grounded_sources:
+        return NOT_FOUND_RESPONSE
+    return "\n\n".join(_format_source(node) for node in grounded_sources)
