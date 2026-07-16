@@ -1,8 +1,7 @@
 """Privacy-compliance masking pipeline for the AfyaPlus RAG Agent System.
 
-PrivacyCompliancePipeline.mask() currently masks Kenyan phone numbers and
-emails. Member/patient ID masking lands in SPEC-1.4; demask() lands in
-SPEC-1.5.
+PrivacyCompliancePipeline.mask() currently masks Kenyan phone numbers,
+emails, and AfyaPlus member/patient IDs. demask() lands in SPEC-1.5.
 """
 
 from __future__ import annotations
@@ -16,6 +15,10 @@ from dataclasses import dataclass
 _KENYAN_PHONE_PATTERN = re.compile(r"(?<!\d)(?:\+254|0)[17]\d{8}(?!\d)")
 
 _EMAIL_PATTERN = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+
+# AfyaPlus member/patient ID, e.g. AP-123456. Word boundaries keep this from
+# matching a 6-digit slice out of a longer ID or a mid-word "AP-".
+_MEMBER_ID_PATTERN = re.compile(r"\bAP-\d{6}\b")
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,7 @@ class PrivacyCompliancePipeline:
         vault: dict[str, str] = {}
         masked_text = _mask_pattern(text, _KENYAN_PHONE_PATTERN, "PHONE", vault)
         masked_text = _mask_pattern(masked_text, _EMAIL_PATTERN, "EMAIL", vault)
+        masked_text = _mask_pattern(masked_text, _MEMBER_ID_PATTERN, "MEMBER_ID", vault)
         return MaskResult(masked_text=masked_text, vault=vault)
 
     def demask(self, text: str, vault: dict[str, str]) -> str:
