@@ -1,6 +1,5 @@
+llama-index
+langchain
 openai
 python-dotenv
 httpx
-llama-index
-langchain
-pytest
