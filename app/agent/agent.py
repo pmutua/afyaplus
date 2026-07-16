@@ -9,16 +9,19 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.tools import BaseTool
 from langgraph.graph.state import CompiledStateGraph
 
+from app.agent.memory import create_checkpointer
+
 
 def create_agent(
     model: str | BaseChatModel,
     tools: Sequence[BaseTool],
     system_prompt: str,
 ) -> CompiledStateGraph:
-    """Create the stateless agent graph; memory is added in SPEC-4.2."""
+    """Create an agent graph with isolated in-process conversation memory."""
 
     return create_langchain_agent(
         model=model,
         tools=list(tools),
         system_prompt=system_prompt,
+        checkpointer=create_checkpointer(),
     )
