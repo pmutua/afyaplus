@@ -1,7 +1,8 @@
 """Privacy-compliance masking pipeline for the AfyaPlus RAG Agent System.
 
-PrivacyCompliancePipeline.mask() currently masks Kenyan phone numbers,
-emails, and AfyaPlus member/patient IDs. demask() lands in SPEC-1.5.
+PrivacyCompliancePipeline masks Kenyan phone numbers, emails, and AfyaPlus
+member/patient IDs, and restores them via demask(). Wiring this around the
+full agent request/response cycle lands in SPEC-5.
 """
 
 from __future__ import annotations
@@ -66,4 +67,6 @@ class PrivacyCompliancePipeline:
     def demask(self, text: str, vault: dict[str, str]) -> str:
         """Restore placeholder tokens in `text` to their original values using `vault`."""
 
-        raise NotImplementedError
+        for token, original in vault.items():
+            text = text.replace(token, original)
+        return text
