@@ -1,10 +1,13 @@
 # Core AI Frameworks
 llama-index
 langchain
+langchain-core
+langgraph
 langchain-openai
 
 # API
 fastapi
+pydantic
 uvicorn[standard]
 
 # Embeddings
