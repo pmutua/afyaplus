@@ -36,8 +36,10 @@ guide](https://docs.railway.com/guides/fastapi).
 
 ## Environment Variables
 
-Start from `.env.example`. Put real secrets only in the gitignored `.env` for
-local use and in Railway's Variables section for deployment.
+Use `.env.example` for local development and `railway.env.example` as the
+production variable checklist. Put real secrets only in the gitignored `.env`
+for local use and in Railway's Variables section for deployment; never upload
+either example file as a secret bundle.
 
 ### Chat
 
@@ -107,18 +109,43 @@ changing source documents, chunking, model, or dimensions. Use a new collection
 name for a reversible migration. Delete the old collection only after the new
 one passes retrieval tests.
 
-## Railway Configuration
+## Railway Production Deployment
 
-Railway can deploy directly from the GitHub repository. Configure the service
-variables above and use this start command:
+The repository's `railway.json` selects Railpack, starts one Uvicorn worker on
+Railway's injected `PORT`, gates activation on `/health`, and restarts failed
+processes up to five times. `.python-version` keeps Railway and CI on Python
+3.12, avoiding accidental runtime changes when Railpack defaults advance.
+
+The production service belongs in the existing `afyaplus` project and
+`production` environment. `railway.env.example` contains the complete required
+key set. Configure these non-secret values in Railway:
+
+| Variable | Value |
+|---|---|
+| `MODEL_PROVIDER` | `ollama_cloud` |
+| `OLLAMA_CLOUD_BASE_URL` | `https://ollama.com/v1` |
+| `CLOUD_TIMEOUT_SECONDS` | `30.0` |
+| `AGENT_HISTORY_TOKEN_BUDGET` | `2048` |
+| `QDRANT_COLLECTION_NAME` | `afyaplus_knowledge_base` |
+| `QDRANT_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` |
+| `QDRANT_EMBEDDING_DIMENSIONS` | `384` |
+| `QDRANT_TIMEOUT_SECONDS` | `30.0` |
+
+Set `OLLAMA_CLOUD_MODEL`, `OLLAMA_CLOUD_API_KEY`, `QDRANT_URL`, and
+`QDRANT_API_KEY` as Railway variables from an approved secret source. Never
+copy their values into GitHub workflow files, `railway.json`, documentation,
+or logs.
+
+The effective start command is:
 
 ```text
-python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
+python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
 ```
 
-Set the Railway health-check path to `/health`. Railway injects `PORT` and uses
-it for health checks, as described in its [health-check
-documentation](https://docs.railway.com/deployments/healthchecks).
+Create the service from `pmutua/AfyaPlus-Triage-Engine`, targeting the approved
+production branch. Generate one Railway HTTPS domain after the first healthy
+deployment. Do not add a volume: vectors remain in Qdrant, and conversation
+memory is intentionally process-local.
 
 `GET /health` proves only that the FastAPI process is alive. It does not test
 Ollama or Qdrant readiness. Run `scripts/verify_provider.py` during controlled
@@ -133,6 +160,41 @@ session-affinity design before horizontal scaling.
 
 Docker remains deliberately deferred for this capstone. Do not add Dockerfile
 or Compose configuration as part of deployment documentation maintenance.
+
+## CI/CD Pipeline
+
+`.github/workflows/ci.yml` runs for every pull request and for pushes to
+`main` and `feat-rag-agent-system`. It installs `requirements.txt` before
+running `pip check`, the complete pytest suite, compileall, and the diff check.
+The workflow has read-only repository permissions and cancels superseded runs
+on the same branch.
+
+Railway owns the deployment half of the pipeline:
+
+1. Connect the production service to the approved GitHub branch.
+2. Enable **Wait for CI** in the service's GitHub deployment settings.
+3. Keep automatic deployments enabled only for that branch.
+4. Require the GitHub `Verify Python application` check before merging to the
+   protected production branch.
+
+With Wait for CI enabled, Railway holds a deployment while GitHub Actions runs,
+skips it when any workflow fails, and proceeds only after all checks succeed.
+This avoids placing a Railway API token in GitHub. Branch protection remains a
+GitHub repository setting and should be enabled when the feature branch is
+approved for merge.
+
+## Rollback
+
+Use Railway's deployment history to select the last verified deployment and
+choose **Redeploy**. A rollback reuses that deployment's code and configuration;
+confirm its referenced variables still exist before activation. Then repeat the
+health, docs, UI, and synthetic chat checks below. If a Qdrant schema or model
+change caused the incident, restore the previously verified collection name
+rather than deleting or rewriting the current collection in place.
+
+For a bad Git commit, also revert it through the normal pull-request workflow.
+Do not force-push the production branch or bypass CI to make the repository
+history match the Railway rollback.
 
 ## Post-Deployment Checks
 

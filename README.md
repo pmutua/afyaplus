@@ -312,6 +312,19 @@ Linux and macOS:
 Tests use deterministic embeddings where `CI` is set and fake chat models for
 model-boundary assertions. They do not require real patient information.
 
+## CI/CD and Railway Production
+
+GitHub Actions runs dependency, test, compilation, and whitespace checks for
+pull requests and pushes to `main` or `feat-rag-agent-system`. Production uses
+Railway's GitHub deployment trigger with **Wait for CI** enabled, so a failed
+workflow skips the associated deployment. Runtime settings are versioned in
+`railway.json`; secrets remain in Railway variables.
+
+See the [deployment guide](docs/deployment.md#railway-production-deployment)
+for the required variables, initial deployment, verification, and rollback
+procedure. Production must use `MODEL_PROVIDER=ollama_cloud`; it cannot reach a
+developer workstation's local Ollama service.
+
 ## Orchestration and Grounding Decisions
 
 - LangChain provides the agent and typed tool interface; LangGraph provides
