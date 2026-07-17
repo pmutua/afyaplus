@@ -1,5 +1,10 @@
 # Manual Testing Guide — Postman Scenarios for the AfyaPlus RAG Agent
 
+This guide exercises the stable `POST /chat` contract. The browser interface
+at `/ui/` uses the same shared privacy-safe chat service, so it is useful for
+conversational checks; keep Postman for exact status-code, schema, and
+validation assertions.
+
 This is a scenario-by-scenario manual test script for the served RAG API,
 using Postman (or any HTTP client — `curl`/`Invoke-RestMethod` equivalents
 are included). It exists to let a human verify, by eye, the same properties

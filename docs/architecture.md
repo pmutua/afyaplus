@@ -15,7 +15,8 @@ prescribe, choose a dose, or replace qualified clinical or insurance review.
 
 | Area | Implementation | Responsibility |
 |---|---|---|
-| HTTP boundary | FastAPI in `app/main.py` | Validate requests and return typed responses |
+| User interfaces | Chainlit `/ui` and FastAPI `/chat` | Browser chat and typed API access |
+| Shared chat boundary | `app/chat.py` | Apply privacy controls and invoke one agent graph |
 | Privacy boundary | `app/safeguards/` | Mask PII before downstream processing and restore approved output |
 | Orchestration | LangChain agent and LangGraph | Select tools and maintain per-thread state |
 | Chat model | `ChatOpenAI` over Ollama | Interpret requests and compose responses |
@@ -25,10 +26,12 @@ prescribe, choose a dose, or replace qualified clinical or insurance review.
 
 ## Request Flow
 
-1. FastAPI validates `message` and `thread_id` with Pydantic.
-2. The `protect_chat_request` dependency masks supported PII and creates a
-   request-local `PrivacyContext`.
-3. The route sends only `privacy.masked_message` to the agent.
+1. Chainlit generates a non-PII UUID for a browser conversation, or an API
+   caller supplies a validated `thread_id`.
+2. Both interfaces construct the same Pydantic `ChatRequest` and call
+   `run_chat()`.
+3. The shared service masks supported PII into a request-local
+   `PrivacyContext` and sends only `privacy.masked_message` to the agent.
 4. LangGraph loads the checkpoint associated with the validated `thread_id`.
 5. Memory middleware trims the model-visible history to recent complete turns.
 6. The model either answers within its allowed scope or selects one of the two
@@ -37,7 +40,7 @@ prescribe, choose a dose, or replace qualified clinical or insurance review.
    model inside LlamaIndex.
 8. The agent produces its final masked response.
 9. The privacy context restores only placeholders present in that request's
-   vault immediately before FastAPI serializes the response.
+   vault immediately before the selected interface displays the response.
 
 Detailed call ordering is shown in [sequence-diagram.md](sequence-diagram.md).
 Deployment configuration and collection operations are documented in
@@ -96,6 +99,10 @@ restricted to 1-128 letters, digits, underscores, or hyphens so callers cannot
 accidentally use free-form PII as a session key. Separate IDs produce isolated
 histories.
 
+Chainlit stores a generated `ui-<uuid>` value in `cl.user_session`; it does not
+derive the memory key from message text or user PII. A new browser conversation
+gets a new key. API clients remain responsible for supplying a safe thread ID.
+
 Before every model call, middleware uses LangChain `trim_messages` with an
 approximate token counter and a default history budget of 2,048 tokens. It
 keeps recent complete turns, starts on a human message, and ends on a human or
@@ -110,8 +117,9 @@ checkpointer is required before horizontal production scaling.
 
 ## Privacy and Trust Boundaries
 
-The raw message is accepted only by the FastAPI dependency. Downstream route,
-agent, memory, and model inputs use placeholder-bearing text. The vault is
+The raw message is accepted by Chainlit or FastAPI only long enough to build a
+validated request. The shared chat service applies masking before agent,
+memory, tool, or model processing. The vault is
 request-local and excluded from the privacy context's representation. It is
 not stored in LangGraph memory or Qdrant.
 
@@ -122,10 +130,17 @@ guarantees, and limitations.
 
 ## API and Failure Behavior
 
-The service exposes `GET /health` and `POST /chat`. Invalid request schemas
-return FastAPI's HTTP 422 response. Agent, model, and tool-loop exceptions are
-translated to HTTP 503 with a generic message so internal details are not
-returned to the caller.
+The service exposes Chainlit at `/ui`, `GET /health`, and `POST /chat`.
+Invalid API schemas return FastAPI's HTTP 422 response. Agent, model, and
+tool-loop exceptions are translated to HTTP 503 with a generic message so
+internal details are not returned to the caller.
+
+Chainlit converts invalid UI messages and unhandled backend failures into
+generic chat messages without returning provider details. Chainlit uses a
+WebSocket connection for interactive sessions; this does not change the
+shared application privacy boundary.
+Its configuration hides chain-of-thought and disables file uploads because the
+current privacy boundary accepts text messages only.
 
 The health endpoint is a process liveness check; it does not prove that Ollama
 or Qdrant is ready. Production deployment should add readiness
@@ -180,11 +195,12 @@ values only.
 
 ## Verification Strategy
 
-The pytest suite covers PII mask/de-mask round trips, API-boundary model input,
+The pytest suite covers PII mask/de-mask round trips, shared-boundary model input,
 sentence-aware ingestion, persistence reuse, retrieval citations and not-found
-behavior, tool validation, per-thread memory isolation, token trimming, and API
-validation. Stateful Qdrant boundary doubles keep unit tests local; a separate
-synthetic-data smoke test verifies the real managed inference path.
+behavior, tool validation, per-thread memory isolation, token trimming, API
+validation, and the mounted UI route. Stateful Qdrant boundary doubles keep
+unit tests local; a separate synthetic-data smoke test verifies the real
+managed inference path.
 
 ## Design Trade-offs and Remaining Risks
 

@@ -32,7 +32,7 @@ Ollama commonly runs as a Windows background service. If
 `http://127.0.0.1:11434` is already listening, do not start a second
 `ollama serve` process.
 
-Start the API:
+Start the application:
 
 ```powershell
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -40,6 +40,18 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 Interactive OpenAPI documentation is available at
 `http://127.0.0.1:8000/docs`; the raw schema is at `/openapi.json`.
+
+## Chainlit Browser Chat
+
+Open `http://127.0.0.1:8000/ui/` to chat without constructing API requests.
+Chainlit is mounted inside the same FastAPI process and calls the same
+`run_chat()` service as `POST /chat`; it does not call Ollama, Qdrant, or the
+agent directly.
+
+Each new browser conversation receives a generated `ui-<uuid>` thread ID.
+Messages in that conversation reuse the ID for LangGraph memory, while a new
+conversation receives an isolated history. The UI uses a WebSocket connection
+and returns a generic message if the agent is unavailable.
 
 ## `GET /health`
 
@@ -163,7 +175,9 @@ Invoke-RestMethod `
 
 ## Current Operational Boundaries
 
-The API is a capstone prototype. It currently has no authentication,
-authorization, rate limiting, durable/distributed memory, or production audit
-sink. Bind it to localhost for development and do not expose it to untrusted
-networks or submit real patient data without adding those controls.
+The API and Chainlit UI are a capstone prototype. They currently have no
+authentication, authorization, rate limiting, durable/distributed memory, or
+production audit sink. Bind the application to localhost for development and
+do not expose it to untrusted networks or submit real patient data without
+adding those controls. In particular, do not expose `/ui` publicly merely
+because it is easier to use than the API.

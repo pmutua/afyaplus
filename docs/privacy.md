@@ -22,16 +22,20 @@ Examples currently detected include `+254712345678`, `0712345678`,
 
 ## Lifecycle of a Request
 
-1. Pydantic validates and trims the request body.
-2. FastAPI calls `protect_chat_request` as a dependency before route logic.
+1. Chainlit or FastAPI constructs a Pydantic `ChatRequest`, which validates and
+   trims the message and non-PII thread key.
+2. Both interfaces call `run_chat()`, which immediately creates a
+   `PrivacyContext` through `protect_chat_request`.
 3. `mask()` scans phone numbers, then emails, then AfyaPlus IDs. Every match is
    replaced by a unique typed placeholder and stored in a request-local vault.
-4. The route, agent, model, memory, and tools receive only the masked message.
+4. The shared service sends only the masked message to the agent; model,
+   memory, and tools never receive the request-local vault.
 5. The model is instructed to preserve placeholders exactly.
 6. The final agent text is passed to `PrivacyContext.restore_output()`.
 7. `demask()` replaces only tokens known to the current request's vault.
-8. FastAPI serializes the restored response. The context becomes unreachable
-   after request processing and is not deliberately persisted.
+8. Chainlit displays or FastAPI serializes the restored response. The context
+   becomes unreachable after request processing and is not deliberately
+   persisted.
 
 ## Vault Controls
 
@@ -45,16 +49,24 @@ from another request has no mapping in the current vault and therefore remains
 unexpanded. Placeholder numbering is an internal implementation detail and
 must not be treated as a durable identifier.
 
+Chainlit stores only a generated `ui-<uuid>` routing key in its user session.
+The current UI has no authentication or durable chat history. The browser
+interface does not bypass masking, but it is still an additional network entry
+point and must not be publicly exposed before access controls are added.
+Chain-of-thought display and spontaneous file uploads are disabled in
+`.chainlit/config.toml` to avoid exposing internal traces or accepting content
+the text-only privacy pipeline does not process.
+
 ## Data by Component
 
 | Component | Raw PII | Masked text | Persistent |
 |---|---:|---:|---:|
-| FastAPI request validation/dependency | Briefly | Yes | No |
+| Chainlit/FastAPI request validation | Briefly | Yes | No |
 | Request-local privacy vault | Yes | Mapping keys | No |
 | Agent and configured chat model | No | Yes | Provider-dependent processing only |
 | LangGraph `InMemorySaver` | No | Yes | Process lifetime only |
 | Knowledge manuals and Qdrant Cloud | No by design | Masked query transient; synthetic policy chunks | Managed collection |
-| Final API response | Restored when referenced | Possibly unknown tokens | Returned to caller |
+| Final UI/API response | Restored when referenced | Possibly unknown tokens | Returned to caller |
 
 ## Logging Rules
 
@@ -62,8 +74,9 @@ must not be treated as a durable identifier.
   messages in shared logs.
 - Log only operational metadata that is necessary, such as request IDs,
   durations, status codes, tool names, and sanitized error categories.
-- Never attach raw exceptions to client responses. The API currently returns a
-  generic 503 message for unhandled agent failures.
+- Never attach raw exceptions to client responses. The API returns a generic
+  503 and Chainlit displays a generic unavailable message for unhandled agent
+  failures.
 - Treat Qdrant collections, knowledge documents, and any future durable checkpoint
   store as controlled application data with access restrictions and backups.
 - Treat Qdrant and Ollama Cloud as external processors. A masked query can
@@ -101,6 +114,7 @@ model call.
 ## Operational Requirements Before Production
 
 - Add authenticated identities and role-based authorization.
+- Apply those controls to both `/ui` WebSockets and HTTP API routes.
 - Add transport encryption and documented encryption-at-rest controls.
 - Expand PII detection from an approved data inventory and measure recall.
 - Add PII-safe audit events, access review, retention, and deletion workflows.

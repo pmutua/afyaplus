@@ -49,10 +49,21 @@ def test_health_endpoint_returns_ok() -> None:
         [],
         "You are a test assistant.",
     )
-    response = TestClient(create_app(agent)).get("/health")
+    response = TestClient(create_app(agent, mount_ui=False)).get("/health")
 
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+def test_chainlit_ui_is_mounted() -> None:
+    agent = create_agent(
+        FakeMessagesListChatModel(responses=[AIMessage(content="Ready")]),
+        [],
+        "You are a test assistant.",
+    )
+    response = TestClient(create_app(agent)).get("/ui/", follow_redirects=False)
+
+    assert response.status_code == 200
 
 
 def test_chat_masks_model_input_and_demasks_final_response() -> None:
@@ -60,7 +71,7 @@ def test_chat_masks_model_input_and_demasks_final_response() -> None:
         responses=[AIMessage(content=MODEL_RESPONSE)]
     )
     agent = create_agent(model, [], "You are a test assistant.")
-    client = TestClient(create_app(agent))
+    client = TestClient(create_app(agent, mount_ui=False))
 
     response = client.post(
         "/chat",
@@ -87,7 +98,7 @@ def test_chat_rejects_invalid_thread_id() -> None:
         [],
         "You are a test assistant.",
     )
-    response = TestClient(create_app(agent)).post(
+    response = TestClient(create_app(agent, mount_ui=False)).post(
         "/chat",
         json={"message": "Habari", "thread_id": "contains spaces"},
     )

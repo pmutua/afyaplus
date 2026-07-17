@@ -8,7 +8,7 @@ AfyaPlus currently uses:
 
 | Layer | Selected service |
 |---|---|
-| Application orchestration | Railway-hosted FastAPI, LangGraph, and LlamaIndex |
+| Application orchestration | Railway-hosted FastAPI, Chainlit, LangGraph, and LlamaIndex |
 | Chat inference | Ollama Cloud, with optional local fallback |
 | Embedding inference | Qdrant Cloud Inference |
 | Vector storage/search | Dedicated Qdrant Cloud collection |
@@ -16,6 +16,11 @@ AfyaPlus currently uses:
 This document records why that architecture was selected and which alternatives
 remain relevant. It is not the setup guide; see [deployment.md](deployment.md)
 for current configuration and operations.
+
+Issue #33 adds Chainlit as a browser interface mounted inside FastAPI. This is
+an interface decision, not a change to the selected inference or persistence
+architecture: both `/ui` and `/chat` call the same privacy-safe service and
+agent graph.
 
 ## Decision Drivers
 
@@ -170,3 +175,5 @@ capstone.
 - [Ollama OpenAI compatibility](https://docs.ollama.com/api/openai-compatibility)
 - [Railway FastAPI deployment](https://docs.railway.com/guides/fastapi)
 - [Railway variables and secrets](https://docs.railway.com/variables)
+- [Chainlit FastAPI integration](https://docs.chainlit.io/integrations/fastapi)
+- [Chainlit deployment overview](https://docs.chainlit.io/deploy/overview)

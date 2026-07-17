@@ -33,19 +33,21 @@ Only chunk text and source filename metadata are uploaded.
 sequenceDiagram
     autonumber
     actor User
-    participant API as FastAPI /chat
-    participant Privacy as Privacy dependency
+    participant Interface as Chainlit /ui or FastAPI /chat
+    participant Service as Shared chat service
+    participant Privacy as Privacy context
     participant Agent as LangChain/LangGraph agent
     participant Memory as InMemorySaver
     participant Model as Ollama llama3.2
     participant Tool as Knowledge tool
     participant RAG as LlamaIndex + Qdrant Cloud
 
-    User->>API: POST message and thread_id
-    API->>Privacy: Validate ChatRequest
+    User->>Interface: UI message or POST message/thread_id
+    Interface->>Service: Validated ChatRequest
+    Service->>Privacy: Create request-local privacy context
     Privacy->>Privacy: Mask phone, email, and member ID
-    Privacy-->>API: PrivacyContext with masked message
-    API->>Agent: Invoke masked message and thread config
+    Privacy-->>Service: PrivacyContext with masked message
+    Service->>Agent: Invoke masked message and thread config
     Agent->>Memory: Load thread checkpoint
     Memory-->>Agent: Masked conversation history
     Agent->>Agent: Trim model-visible history
@@ -59,14 +61,15 @@ sequenceDiagram
     Agent->>Model: Tool result with source citations
     Model-->>Agent: Final masked answer
     Agent->>Memory: Save masked turn
-    Agent-->>API: Final masked message
-    API->>Privacy: Restore current request placeholders
-    Privacy-->>API: Approved de-masked output
-    API-->>User: ChatResponse
+    Agent-->>Service: Final masked message
+    Service->>Privacy: Restore current request placeholders
+    Privacy-->>Service: Approved de-masked output
+    Service-->>Interface: ChatResponse
+    Interface-->>User: Browser message or JSON response
 ```
 
 The privacy vault never enters the agent, model, memory, knowledge tool, or
-vector store. Only the final API response crosses back through the vault.
+vector store. Only the final interface response crosses back through the vault.
 
 ## Calculator Tool Request
 
@@ -104,24 +107,28 @@ prescription, diagnose a condition, or decide treatment safety.
 ```mermaid
 sequenceDiagram
     actor User
-    participant API as FastAPI
+    participant Interface as FastAPI or Chainlit
     participant Agent as Agent graph
     participant Knowledge as Knowledge tool
     participant Backend as Ollama/Qdrant
 
     alt Invalid message or thread_id
-        User->>API: Invalid POST /chat
-        API-->>User: HTTP 422 validation response
+        User->>Interface: Invalid POST /chat
+        Interface-->>User: HTTP 422 validation response
     else Knowledge backend failure handled by tool
         Agent->>Knowledge: Search policy
         Knowledge->>Backend: Retrieve/embed
         Backend--xKnowledge: Unavailable
         Knowledge-->>Agent: Temporary unavailability text
     else Unhandled agent or model failure
-        Agent--xAPI: Exception
-        API-->>User: HTTP 503 generic response
+        Agent--xInterface: Exception
+        Interface-->>User: HTTP 503 generic response
+    else Unhandled UI agent or model failure
+        Agent--xInterface: Exception
+        Interface-->>User: Generic unavailable chat message
     end
 ```
 
 Handled knowledge failures remain inside the tool loop. Unhandled graph or
-model errors become a generic 503 response without internal exception details.
+model errors become a generic 503 API response or generic UI message without
+internal exception details.

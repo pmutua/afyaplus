@@ -6,7 +6,7 @@ The deployed RAG application uses three managed boundaries:
 
 ```text
 Railway
-  FastAPI + LangGraph + LlamaIndex orchestration
+  FastAPI + Chainlit + LangGraph + LlamaIndex orchestration
        |                         |
        | chat                    | managed embedding/search
        v                         v
@@ -124,18 +124,28 @@ documentation](https://docs.railway.com/deployments/healthchecks).
 Ollama or Qdrant readiness. Run `scripts/verify_provider.py` during controlled
 deployment verification and exercise a synthetic grounded query after deploy.
 
+Chainlit is mounted at `/ui` and uses WebSockets. Railway supports WebSockets
+through the same public service, so no second process or port is required. Keep
+the Uvicorn worker count at one while conversation checkpoints remain
+in-memory; multiple workers can route successive socket or API turns to
+different, isolated memory stores. Add a durable shared checkpointer and
+session-affinity design before horizontal scaling.
+
 Docker remains deliberately deferred for this capstone. Do not add Dockerfile
 or Compose configuration as part of deployment documentation maintenance.
 
 ## Post-Deployment Checks
 
 1. Confirm `GET /health` returns `200`.
-2. Send a synthetic insurance-policy question through `POST /chat`.
-3. Confirm the answer includes a tracked filename citation.
-4. Ask an out-of-scope question and confirm `Information not found.` behavior.
-5. Check Qdrant collection count and inference usage in the Cloud console.
-6. Check application logs for sanitized provider/fallback warnings only.
-7. Run the Postman scenarios in [manual-testing-postman.md](manual-testing-postman.md).
+2. Open `/ui/`, confirm the WebSocket session connects, and send a synthetic
+   insurance-policy question.
+3. Repeat a related question and confirm conversation context is retained.
+4. Send a synthetic insurance-policy question through `POST /chat`.
+5. Confirm grounded answers include tracked filename citations.
+6. Ask an out-of-scope question and confirm `Information not found.` behavior.
+7. Check Qdrant collection count and inference usage in the Cloud console.
+8. Check application logs for sanitized provider/fallback warnings only.
+9. Run the Postman scenarios in [manual-testing-postman.md](manual-testing-postman.md).
 
 ## Failure and Recovery
 
@@ -144,6 +154,7 @@ or Compose configuration as part of deployment documentation maintenance.
 | Missing Qdrant configuration | Knowledge tool returns controlled unavailability | Correct Railway variables and redeploy |
 | Qdrant timeout/outage | Retrieval fails without exposing credentials | Check cluster status, networking, and timeout |
 | Chat provider failure | Configured fallback is attempted once when available | Review warning and provider health |
+| Chainlit socket disconnect | UI reconnects or reports loss of connection | Check Railway service health and WebSocket path |
 | Wrong model dimensions | Qdrant rejects incompatible vectors | Use a compatible collection or rebuild |
 | Stale knowledge | Existing collection continues serving old chunks | Build and verify a new collection name |
 
@@ -166,6 +177,8 @@ records are used:
 - confirm applicable contracts/BAAs and data-processing regions in writing;
 - expand PII detection beyond the prototype patterns;
 - add authentication, authorization, audit logging, retention, and deletion;
+- protect both Chainlit WebSockets and FastAPI routes with the selected access
+  controls;
 - add encryption, key rotation, readiness monitoring, backups, and incident
   response;
 - run retrieval-quality, privacy, prompt-injection, and dependency reviews.
@@ -183,3 +196,5 @@ the complete boundary and decision rationale.
 - [Railway FastAPI guide](https://docs.railway.com/guides/fastapi)
 - [Railway variables](https://docs.railway.com/variables)
 - [Railway health checks](https://docs.railway.com/deployments/healthchecks)
+- [Chainlit FastAPI integration](https://docs.chainlit.io/integrations/fastapi)
+- [Chainlit deployment and WebSockets](https://docs.chainlit.io/deploy/overview)

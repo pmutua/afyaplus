@@ -1,9 +1,9 @@
 # AfyaPlus Enterprise-Grade RAG-Powered Agent System
 
 AfyaPlus is a privacy-aware medical-insurance verification and
-clinical-routing assistant. It combines a FastAPI boundary, a tool-using
-LangChain/LangGraph agent, a grounded LlamaIndex knowledge pipeline, Ollama
-chat models, Qdrant Cloud Inference, and Kenyan PII masking.
+clinical-routing assistant. It combines FastAPI and Chainlit interfaces, a
+tool-using LangChain/LangGraph agent, a grounded LlamaIndex knowledge pipeline,
+Ollama chat models, Qdrant Cloud Inference, and Kenyan PII masking.
 
 The system explains documented policy and routing guidance. It does not
 diagnose, prescribe, select medication doses, or replace qualified clinical or
@@ -11,7 +11,7 @@ insurance review.
 
 ## What Is Implemented
 
-- FastAPI endpoints for health checks and stateful chat.
+- A Chainlit browser chat at `/ui` plus FastAPI health and chat endpoints.
 - Kenyan phone, email, and AfyaPlus member-ID masking before model calls.
 - Request-local de-masking immediately before an approved response is returned.
 - Sentence-aware LlamaIndex chunking with managed Qdrant embeddings.
@@ -27,7 +27,7 @@ insurance review.
 ## Architecture
 
 ```text
-Raw request
+Browser `/ui` or API `/chat` request
   -> Pydantic validation
   -> PII masking and request-local vault
   -> LangChain/LangGraph agent and bounded thread memory
@@ -35,7 +35,7 @@ Raw request
        -> validated medication-volume tool
   -> grounded masked response
   -> request-local de-masking
-  -> FastAPI response
+  -> Chainlit message or FastAPI response
 ```
 
 Detailed documentation:
@@ -52,11 +52,13 @@ Detailed documentation:
 ```text
 app/
   agent/                 # Agent, prompt, tools, memory, token trimming
+  chainlit_app.py        # Browser chat lifecycle and UI sessions
+  chat.py                # Shared privacy-safe chat execution
   models/                # Pydantic request and response schemas
   rag/                   # Chunking, embeddings, ingestion, retrieval, grounding
   safeguards/            # PII patterns, masking, de-masking, API dependency
   config.py              # Ollama local/cloud chat-model provider factory
-  main.py                # FastAPI application
+  main.py                # FastAPI application and mounted Chainlit UI
 docs/                    # Primary product documentation
 knowledge/               # Local insurance and clinical-routing manuals
 tests/                   # Automated test suite
@@ -65,6 +67,7 @@ triage/                  # Foundational Week 1 triage engine
 triage_cli.py             # Foundational triage CLI entrypoint
 .env.example             # RAG Agent System configuration template
 requirements.txt         # Python dependencies
+.chainlit/config.toml    # Safe UI branding and feature settings
 ```
 
 The Qdrant collection is created and populated lazily on the first knowledge
@@ -123,10 +126,10 @@ Copy-Item .env.example .env
 ```
 
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
-the API. Keep the application collection separate from any MCP/tooling
+the application. Keep the application collection separate from any MCP/tooling
 collection.
 
-Pull the local models and start the API:
+Pull the local models and start the application:
 
 ```powershell
 ollama pull llama3.2
@@ -152,9 +155,9 @@ cp .env.example .env
 ```
 
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
-the API.
+the application.
 
-Pull the local models and start the API:
+Pull the local models and start the application:
 
 ```bash
 ollama pull llama3.2
@@ -183,9 +186,9 @@ cp .env.example .env
 ```
 
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
-the API.
+the application.
 
-Pull the local models and start the API:
+Pull the local models and start the application:
 
 ```bash
 ollama pull llama3.2
@@ -243,10 +246,11 @@ The foundational triage engine reads its own `triage/.env`
 either real `.env`; Git excludes `.env`/`.env.*` at every directory depth,
 plus persisted `storage/` data.
 
-## Verify the API
+## Chat in the Browser or API
 
 When Uvicorn reports that it is running on `http://127.0.0.1:8000`, open:
 
+- Chainlit chat: `http://127.0.0.1:8000/ui/`
 - Swagger UI: `http://127.0.0.1:8000/docs`
 - OpenAPI schema: `http://127.0.0.1:8000/openapi.json`
 - Health endpoint: `http://127.0.0.1:8000/health`
@@ -362,6 +366,8 @@ spaces or hyphens require additional controls before real patient use. See the
 ## Current Operational Limitations
 
 - No authentication, authorization, rate limiting, or production audit sink.
+- The Chainlit UI is intentionally unauthenticated and must remain private until
+  authentication and authorization are added.
 - Conversation memory is process-local and is not shared across workers.
 - Health checks report process liveness, not Ollama or Qdrant readiness.
 - Local model quality and latency depend on host hardware.

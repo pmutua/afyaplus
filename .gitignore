@@ -13,6 +13,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.chainlit/translations/
 
 # OS/editor files
 .DS_Store
