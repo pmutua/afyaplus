@@ -1,0 +1,420 @@
+{
+  "info": {
+    "name": "AfyaPlus RAG Agent - Manual Test Scenarios",
+    "description": "Companion collection for docs/manual-testing-postman.md. Import into Postman, set the baseUrl variable if not running on the default host/port, and run folders top-to-bottom.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" }
+  ],
+  "item": [
+    {
+      "name": "A. Health Check",
+      "item": [
+        {
+          "name": "GET /health",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/health"
+          }
+        }
+      ]
+    },
+    {
+      "name": "B. Grounded RAG - Insurance Policy",
+      "item": [
+        {
+          "name": "Maternity waiting period",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What is the maternity coverage waiting period, and does it apply to emergency care?\",\n  \"thread_id\": \"manual-rag-insurance-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Plan tiers and coverage",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What are the four AfyaPlus plan tiers and their outpatient coverage percentages?\",\n  \"thread_id\": \"manual-rag-insurance-002\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Pre-authorization requirements",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Which services require pre-authorization, and how long does it take?\",\n  \"thread_id\": \"manual-rag-insurance-003\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "C. Grounded RAG - Clinical Routing",
+      "item": [
+        {
+          "name": "Chest pain routing",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"A patient reports chest pain radiating to the arm along with shortness of breath - how should this be routed?\",\n  \"thread_id\": \"manual-rag-clinical-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Pregnancy danger signs routing",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"How should a pregnant patient with a severe headache and sudden hand swelling be routed?\",\n  \"thread_id\": \"manual-rag-clinical-002\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "D. Grounding Guardrail (ungrounded)",
+      "item": [
+        {
+          "name": "Unrelated general-knowledge question",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What is the capital of France?\",\n  \"thread_id\": \"manual-rag-ungrounded-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Plausible but undocumented policy question",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What is AfyaPlus's dental coverage policy?\",\n  \"thread_id\": \"manual-rag-ungrounded-002\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "E. PII Masking - Phone",
+      "item": [
+        {
+          "name": "+254 prefix",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Please verify my insurance. My phone number is +254712345678.\",\n  \"thread_id\": \"manual-privacy-phone-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "0 prefix",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Please verify my insurance. My phone number is 0712345678.\",\n  \"thread_id\": \"manual-privacy-phone-002\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Out-of-range (should NOT mask)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"My phone number is +254212345678.\",\n  \"thread_id\": \"manual-privacy-phone-003\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "F. PII Masking - Email",
+      "item": [
+        {
+          "name": "Standard email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"You can reach me at wanjiku.otieno@example.co.ke for any follow-up.\",\n  \"thread_id\": \"manual-privacy-email-001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "G. PII Masking - Member ID",
+      "item": [
+        {
+          "name": "Valid AP-###### format",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Please check the maternity waiting period for member AP-483920.\",\n  \"thread_id\": \"manual-privacy-memberid-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Near-miss, 5 digits (should NOT mask)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Is member AP-48392 active?\",\n  \"thread_id\": \"manual-privacy-memberid-002\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "H. PII Masking - Combined",
+      "item": [
+        {
+          "name": "Member ID + email + phone in one message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Check member AP-123456, email aisha@example.co.ke, phone +254712345678, for the maternity waiting period.\",\n  \"thread_id\": \"manual-privacy-combined-001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "I. Calculator - Happy Path",
+      "item": [
+        {
+          "name": "500mg / 250mg per mL = 2 mL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"A clinician prescribed 500 mg of a medication with a concentration of 250 mg/mL. What volume should be administered?\",\n  \"thread_id\": \"manual-calculator-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "375mg / 150mg per mL = 2.5 mL",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Dose is 375 mg, concentration is 150 mg/mL - what volume is that?\",\n  \"thread_id\": \"manual-calculator-002\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "J. Calculator - Edge Cases",
+      "item": [
+        {
+          "name": "Zero dose",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What's the medication volume for a dose of 0 mg at 100 mg/mL concentration?\",\n  \"thread_id\": \"manual-calculator-edge-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Negative dose",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Calculate medication volume for a dose of -50 mg at 20 mg/mL.\",\n  \"thread_id\": \"manual-calculator-edge-002\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Zero concentration (division guard)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What's the medication volume if concentration is 0 mg/mL and dose is 100 mg?\",\n  \"thread_id\": \"manual-calculator-edge-003\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Out-of-scope dosing decision (should refuse)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What dose of paracetamol should I give a 2-year-old child?\",\n  \"thread_id\": \"manual-calculator-edge-004\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "K. Memory - Multi-turn",
+      "item": [
+        {
+          "name": "Turn 1: maternity waiting period",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What is the maternity coverage waiting period?\",\n  \"thread_id\": \"manual-memory-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Turn 2: follow-up referencing turn 1 (run after turn 1)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"And what about elective surgery - is it shorter or longer than that?\",\n  \"thread_id\": \"manual-memory-001\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "L. Memory - Thread Isolation",
+      "item": [
+        {
+          "name": "Thread A: state a fact",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"My favorite plan tier is Platinum.\",\n  \"thread_id\": \"manual-isolation-thread-a\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Thread B: should NOT know thread A's fact",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"What did I just say my favorite plan tier was?\",\n  \"thread_id\": \"manual-isolation-thread-b\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "M. Validation Errors (expect 422)",
+      "item": [
+        {
+          "name": "Empty message",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"\",\n  \"thread_id\": \"manual-validation-001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "thread_id contains spaces",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Habari\",\n  \"thread_id\": \"contains spaces\"\n}"
+            }
+          }
+        },
+        {
+          "name": "thread_id starts with underscore",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Habari\",\n  \"thread_id\": \"_starts-with-underscore\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Missing thread_id field",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/chat",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Habari\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
