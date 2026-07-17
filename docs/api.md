@@ -11,11 +11,13 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
+Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env`. Never copy a
+real key into `.env.example`.
+
 Install Ollama separately and ensure the required models are available:
 
 ```powershell
 ollama pull llama3.2
-ollama pull embeddinggemma
 ollama list
 ```
 
@@ -44,7 +46,7 @@ Returns process liveness:
 
 Status: `200 OK`.
 
-This endpoint does not query Ollama or ChromaDB, so it is not a dependency
+This endpoint does not query Ollama or Qdrant, so it is not a dependency
 readiness check.
 
 ## `POST /chat`

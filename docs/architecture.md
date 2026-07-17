@@ -4,7 +4,7 @@
 
 The AfyaPlus RAG Agent System answers documented medical-insurance and
 clinical-routing questions through a privacy boundary, a tool-using LangChain
-agent, and a locally persisted LlamaIndex knowledge base. It also performs a
+agent, and a Qdrant-persisted LlamaIndex knowledge base. It also performs a
 limited medication-volume calculation when a qualified clinician supplies
 both required inputs.
 
@@ -19,8 +19,8 @@ prescribe, choose a dose, or replace qualified clinical or insurance review.
 | Privacy boundary | `app/safeguards/` | Mask PII before downstream processing and restore approved output |
 | Orchestration | LangChain agent and LangGraph | Select tools and maintain per-thread state |
 | Chat model | `ChatOpenAI` over Ollama | Interpret requests and compose responses |
-| Knowledge pipeline | LlamaIndex | Load, semantically chunk, embed, and retrieve local manuals |
-| Vector storage | ChromaDB | Persist vectors across application restarts |
+| Knowledge pipeline | LlamaIndex | Load, sentence-chunk, and represent manuals and results |
+| Embedding and storage | Qdrant Cloud Inference | Embed, persist, and search knowledge chunks |
 | Functional tool | LangChain `@tool` | Calculate clinician-supplied dose/concentration volume safely |
 
 ## Request Flow
@@ -44,22 +44,18 @@ Detailed call ordering is shown in [sequence-diagram.md](sequence-diagram.md).
 ## Grounded Knowledge Pipeline
 
 The knowledge source is the repository's `knowledge/` directory. Ingestion
-uses `SimpleDirectoryReader` and `SemanticSplitterNodeParser`, configured with
-a buffer size of 1 and a 95th-percentile semantic breakpoint. Chunk boundaries
-therefore depend on embedding similarity rather than fixed token counts.
+uses `SimpleDirectoryReader` and LlamaIndex `SentenceSplitter` with 512-token
+chunks and 64-token overlap. This avoids local embedding compute; Qdrant Cloud
+Inference embeds each chunk during upload.
 
-Local execution uses the Ollama embedding model selected by
-`OLLAMA_EMBEDDING_MODEL`, defaulting to `embeddinggemma`. Continuous
-integration uses `DeterministicHashEmbedding`, a network-free signed hashing
-embedding that preserves useful lexical overlap for reproducible tests.
+Vectors live in the `QDRANT_COLLECTION_NAME` collection. The application sends
+Qdrant `Document` inference objects using the configured managed model and a
+384-dimensional cosine collection. A populated collection is reused without
+re-ingesting the manuals.
 
-Vectors are stored under `CHROMA_STORAGE_DIR` in the
-`CHROMA_COLLECTION_NAME` collection. Chroma's own embedding function is
-disabled; LlamaIndex supplies every vector. If the collection already has
-nodes, `build_index()` reloads it instead of re-ingesting the manuals.
-
-Retrieval uses `similarity_top_k=3` and `response_mode="no_text"`. LlamaIndex
-returns source nodes but does not ask an LLM to synthesize an answer. A second
+Retrieval uses `similarity_top_k=3`. Qdrant embeds the query and searches the
+same collection. The adapter returns LlamaIndex source nodes without asking a
+second LLM to synthesize an answer. A
 deterministic relevance check retains only nodes that share substantive,
 normalized terms with the question. Each retained excerpt receives an inline
 filename citation. If none remain, retrieval returns exactly:
@@ -112,7 +108,7 @@ checkpointer is required before horizontal production scaling.
 The raw message is accepted only by the FastAPI dependency. Downstream route,
 agent, memory, and model inputs use placeholder-bearing text. The vault is
 request-local and excluded from the privacy context's representation. It is
-not stored in LangGraph memory or ChromaDB.
+not stored in LangGraph memory or Qdrant.
 
 De-masking is deliberately last: only the final response is restored, using
 only mappings created for the current request. Unknown or invented placeholder
@@ -127,7 +123,7 @@ translated to HTTP 503 with a generic message so internal details are not
 returned to the caller.
 
 The health endpoint is a process liveness check; it does not prove that Ollama
-or the knowledge index is ready. Production deployment should add readiness
+or Qdrant is ready. Production deployment should add readiness
 checks, authentication, rate limiting, structured PII-safe audit events, and
 monitoring. Endpoint details are in [api.md](api.md).
 
@@ -136,9 +132,9 @@ monitoring. Endpoint details are in [api.md](api.md).
 `app/config.py` implements a provider factory: `MODEL_PROVIDER` selects the
 chat transport (`ollama_local` default, or `ollama_cloud`) without any code
 changes, failing fast at startup on an invalid provider, a missing cloud
-model/API key, or a malformed URL. Embeddings (`app/rag/embeddings.py`) are
-configured independently via `EMBEDDING_PROVIDER`/`OLLAMA_EMBEDDING_BASE_URL`
-and stay local even when chat uses `ollama_cloud`.
+model/API key, or a malformed URL. Qdrant retrieval is configured independently
+through `QDRANT_*`; switching chat providers never changes the embedding model
+or vector store.
 
 At request time, if a chat call to the configured provider fails (e.g. local
 Ollama runs out of memory), `build_fallback_middleware()` retries once
@@ -161,17 +157,18 @@ the original exception propagates to the existing `503` handling below.
 | `OLLAMA_CLOUD_API_KEY` | *(required in cloud mode)* | Real Ollama Cloud API key |
 | `CLOUD_TIMEOUT_SECONDS` | `30.0` | Cloud chat request timeout |
 | `AGENT_HISTORY_TOKEN_BUDGET` | `2048` | Maximum approximate history tokens per model call |
-| `EMBEDDING_PROVIDER` | `ollama_local` | Embedding provider, independent of the chat provider |
-| `OLLAMA_EMBEDDING_BASE_URL` | `http://localhost:11434` | Embedding host |
-| `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Local embedding model |
-| `CHROMA_STORAGE_DIR` | `storage/chroma` | Persistent vector directory |
-| `CHROMA_COLLECTION_NAME` | `afyaplus_knowledge_base` | Persistent collection name |
+| `QDRANT_URL` | *(required)* | Qdrant Cloud HTTPS endpoint |
+| `QDRANT_API_KEY` | *(required)* | Qdrant API key, stored only as a secret |
+| `QDRANT_COLLECTION_NAME` | `afyaplus_knowledge_base` | Persistent application collection |
+| `QDRANT_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Managed embedding model |
+| `QDRANT_EMBEDDING_DIMENSIONS` | `384` | Dense vector dimensions |
+| `QDRANT_TIMEOUT_SECONDS` | `30.0` | Cloud request timeout |
 
-`python scripts/verify_provider.py` reports the active chat/embedding
-provider, model, and host, and confirms both actually connect, without ever
+`python scripts/verify_provider.py` reports the active chat and Qdrant
+model, collection, and host, and confirms both actually connect, without ever
 printing secrets.
 
-`.env` and `storage/` are excluded from Git at every directory depth (this
+`.env` and legacy local `storage/` are excluded from Git (this
 also covers `triage/.env`, Triage Engine's separate environment file —
 see `triage/docs/triage_engine.md`). `.env.example` contains safe example
 values only.
@@ -179,15 +176,15 @@ values only.
 ## Verification Strategy
 
 The pytest suite covers PII mask/de-mask round trips, API-boundary model input,
-semantic ingestion, persistence reload, retrieval citations and not-found
+sentence-aware ingestion, persistence reuse, retrieval citations and not-found
 behavior, tool validation, per-thread memory isolation, token trimming, and API
-validation. Fake chat models and deterministic CI embeddings keep tests local
-and repeatable without weakening retrieval-shaped assertions.
+validation. Stateful Qdrant boundary doubles keep unit tests local; a separate
+synthetic-data smoke test verifies the real managed inference path.
 
 ## Design Trade-offs and Remaining Risks
 
-- Local Ollama and Chroma keep sensitive workloads under operator control, but
-  availability and latency depend on the host machine.
+- Qdrant Cloud removes local embedding compute but makes retrieval dependent on
+  network availability, cloud credentials, region, and provider governance.
 - Approximate token counting is fast and model-independent but not identical to
   llama3.2 tokenization.
 - Lexical source validation is deterministic and conservative but can reject a

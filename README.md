@@ -2,8 +2,8 @@
 
 AfyaPlus is a privacy-aware medical-insurance verification and
 clinical-routing assistant. It combines a FastAPI boundary, a tool-using
-LangChain/LangGraph agent, a grounded LlamaIndex knowledge pipeline, local
-Ollama models, persistent ChromaDB storage, and Kenyan PII masking.
+LangChain/LangGraph agent, a grounded LlamaIndex knowledge pipeline, Ollama
+chat models, Qdrant Cloud Inference, and Kenyan PII masking.
 
 The system explains documented policy and routing guidance. It does not
 diagnose, prescribe, select medication doses, or replace qualified clinical or
@@ -14,8 +14,8 @@ insurance review.
 - FastAPI endpoints for health checks and stateful chat.
 - Kenyan phone, email, and AfyaPlus member-ID masking before model calls.
 - Request-local de-masking immediately before an approved response is returned.
-- Semantic LlamaIndex chunking with Ollama embeddings.
-- Persistent ChromaDB vectors that reload instead of re-ingesting on restart.
+- Sentence-aware LlamaIndex chunking with managed Qdrant embeddings.
+- Persistent Qdrant Cloud vectors that reload instead of re-ingesting on restart.
 - Deterministic source validation, inline citations, and an exact
   `Information not found.` fallback.
 - A LangChain agent with exactly two tools: grounded knowledge retrieval and a
@@ -31,7 +31,7 @@ Raw request
   -> Pydantic validation
   -> PII masking and request-local vault
   -> LangChain/LangGraph agent and bounded thread memory
-       -> LlamaIndex + ChromaDB knowledge tool
+       -> LlamaIndex + Qdrant Cloud knowledge tool
        -> validated medication-volume tool
   -> grounded masked response
   -> request-local de-masking
@@ -73,8 +73,9 @@ Configuration" below and [triage/docs/triage_engine.md](triage/docs/triage_engin
 
 - Python 3.11 or newer.
 - `pip` and Python virtual-environment support.
-- Ollama installed on the host operating system.
-- Enough local memory to run `llama3.2` and `embeddinggemma`.
+- A Qdrant Cloud cluster with Inference enabled.
+- Ollama installed only when using the optional local chat provider.
+- Enough local memory to run `llama3.2` when using local chat.
 
 Install Ollama from its official platform page:
 
@@ -114,11 +115,14 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
+Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
+the API. Keep the application collection separate from any MCP/tooling
+collection.
+
 Pull the local models and start the API:
 
 ```powershell
 ollama pull llama3.2
-ollama pull embeddinggemma
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -140,11 +144,13 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
+Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
+the API.
+
 Pull the local models and start the API:
 
 ```bash
 ollama pull llama3.2
-ollama pull embeddinggemma
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -169,11 +175,13 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
+Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
+the API.
+
 Pull the local models and start the API:
 
 ```bash
 ollama pull llama3.2
-ollama pull embeddinggemma
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -208,17 +216,18 @@ provider actually answered.
 | `OLLAMA_CLOUD_API_KEY` | *(required in cloud mode)* | Real Ollama Cloud API key — never `ollama` |
 | `CLOUD_TIMEOUT_SECONDS` | `30.0` | Cloud chat-model request timeout |
 | `AGENT_HISTORY_TOKEN_BUDGET` | `2048` | Approximate history tokens sent per model call |
-| `EMBEDDING_PROVIDER` | `ollama_local` | Embedding provider — stays local even if chat is cloud |
-| `OLLAMA_EMBEDDING_BASE_URL` | `http://localhost:11434` | Embedding host, independent of the chat host |
-| `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Semantic chunking and retrieval embedding model |
-| `CHROMA_STORAGE_DIR` | `storage/chroma` | Persistent vector-store directory |
-| `CHROMA_COLLECTION_NAME` | `afyaplus_knowledge_base` | Chroma collection name |
+| `QDRANT_URL` | *(required)* | Qdrant Cloud HTTPS cluster endpoint |
+| `QDRANT_API_KEY` | *(required)* | Qdrant Cloud API key; never commit it |
+| `QDRANT_COLLECTION_NAME` | `afyaplus_knowledge_base` | Application knowledge collection |
+| `QDRANT_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Managed dense embedding model |
+| `QDRANT_EMBEDDING_DIMENSIONS` | `384` | Collection vector size for the selected model |
+| `QDRANT_TIMEOUT_SECONDS` | `30.0` | Qdrant request timeout |
 
 `CI` is an ambient automation flag, not a local `.env` setting. When present,
 it selects a deterministic test embedding instead of contacting Ollama.
 
 Run `python scripts/verify_provider.py` after changing any of the above to
-confirm the configured chat and embedding providers actually connect — it
+confirm the configured chat and Qdrant providers actually connect — it
 never prints secrets.
 
 The foundational triage engine reads its own `triage/.env`
@@ -297,10 +306,10 @@ model-boundary assertions. They do not require real patient information.
 - LangChain provides the agent and typed tool interface; LangGraph provides
   checkpointed state by `thread_id`.
 - The agent exposes exactly two narrow tools to reduce tool confusion.
-- LlamaIndex performs semantic chunking and returns source nodes without an
-  additional synthesis model.
-- ChromaDB persists locally generated vectors and reloads a populated
-  collection instead of duplicating ingestion.
+- LlamaIndex loads documents, creates sentence-aware chunks, and represents
+  retrieved source nodes without an additional synthesis model.
+- Qdrant Cloud performs managed embedding, storage, and semantic search and
+  reuses a populated collection instead of duplicating ingestion.
 - Retrieved nodes must share substantive normalized terms with the question.
   Unsupported retrieval returns exactly `Information not found.`
 - Every retained policy or routing excerpt includes its source filename.
@@ -327,7 +336,7 @@ certification.
 |---|---|
 | Data minimization | Supported phone numbers, emails, and member IDs are replaced before agent, model, memory, or tool processing. The request-local vault contains only values needed to restore that request's approved output. |
 | Purpose limitation | The prompt and tool descriptions restrict processing to documented insurance verification, clinical routing, and clinician-supplied arithmetic. Diagnosis, prescribing, and dose selection are prohibited. |
-| Security safeguards | Ollama and ChromaDB run locally by default; `.env` and vector storage are excluded from Git; the vault is excluded from normal representations; unhandled failures return a generic 503 response. |
+| Security safeguards | Credentials stay in `.env`/deployment secrets; the vault is excluded from normal representations; unhandled failures return a generic 503 response. |
 
 Additional controls:
 
@@ -347,7 +356,7 @@ spaces or hyphens require additional controls before real patient use. See the
 
 - No authentication, authorization, rate limiting, or production audit sink.
 - Conversation memory is process-local and is not shared across workers.
-- Health checks report process liveness, not Ollama or ChromaDB readiness.
+- Health checks report process liveness, not Ollama or Qdrant readiness.
 - Local model quality and latency depend on host hardware.
 - Human review remains required for clinical risk and benefits decisions.
 - Docker and deployment packaging are intentionally deferred until after the

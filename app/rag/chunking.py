@@ -1,26 +1,17 @@
-"""Semantic chunking for the AfyaPlus RAG Agent System's knowledge base.
-
-Uses SemanticSplitterNodeParser (embedding-similarity-based node grouping)
-per the rubric's literal "chunk semantically" wording, not a plain
-SentenceSplitter.
-"""
+"""Sentence-aware LlamaIndex chunking for the AfyaPlus knowledge base."""
 
 from __future__ import annotations
 
-from llama_index.core.node_parser import SemanticSplitterNodeParser
+from llama_index.core.node_parser import SentenceSplitter
 
-from app.rag.embeddings import build_embedding_model
+_CHUNK_SIZE = 512
+_CHUNK_OVERLAP = 64
 
 
-def build_node_parser() -> SemanticSplitterNodeParser:
-    """Build the semantic chunker, grouping sentences by embedding similarity.
+def build_node_parser() -> SentenceSplitter:
+    """Build a deterministic parser that requires no local embedding model."""
 
-    Uses the same embedding model ingestion.py uses for the index itself,
-    so chunk boundaries and stored vectors come from a consistent model.
-    """
-
-    return SemanticSplitterNodeParser.from_defaults(
-        embed_model=build_embedding_model(),
-        buffer_size=1,
-        breakpoint_percentile_threshold=95,
+    return SentenceSplitter(
+        chunk_size=_CHUNK_SIZE,
+        chunk_overlap=_CHUNK_OVERLAP,
     )

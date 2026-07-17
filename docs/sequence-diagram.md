@@ -12,7 +12,7 @@ sequenceDiagram
     participant Memory as InMemorySaver
     participant Model as Ollama llama3.2
     participant Tool as Knowledge tool
-    participant RAG as LlamaIndex + ChromaDB
+    participant RAG as LlamaIndex + Qdrant Cloud
 
     User->>API: POST message and thread_id
     API->>Privacy: Validate ChatRequest
@@ -80,15 +80,15 @@ sequenceDiagram
     participant API as FastAPI
     participant Agent as Agent graph
     participant Knowledge as Knowledge tool
-    participant Ollama as Ollama/Chroma
+    participant Backend as Ollama/Qdrant
 
     alt Invalid message or thread_id
         User->>API: Invalid POST /chat
         API-->>User: HTTP 422 validation response
     else Knowledge backend failure handled by tool
         Agent->>Knowledge: Search policy
-        Knowledge->>Ollama: Retrieve/embed
-        Ollama--xKnowledge: Unavailable
+        Knowledge->>Backend: Retrieve/embed
+        Backend--xKnowledge: Unavailable
         Knowledge-->>Agent: Temporary unavailability text
     else Unhandled agent or model failure
         Agent--xAPI: Exception

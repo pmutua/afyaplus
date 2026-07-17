@@ -1,9 +1,8 @@
 """Connectivity verification for the AfyaPlus model provider configuration.
 
-Reports the active chat provider/model/host and the embedding
-provider/model/host, then verifies each is actually reachable. Run it after
-changing MODEL_PROVIDER, OLLAMA_LOCAL_*, OLLAMA_CLOUD_*, or the
-OLLAMA_EMBEDDING_* variables to confirm the switch took effect.
+Reports the active chat provider/model/host and Qdrant collection/model/host,
+then verifies each is reachable. Run it after changing MODEL_PROVIDER,
+OLLAMA_LOCAL_*, OLLAMA_CLOUD_*, or QDRANT_* variables.
 
 Usage: python scripts/verify_provider.py
 
@@ -20,7 +19,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import ConfigurationError, Settings, build_chat_model, load_settings  # noqa: E402
-from app.rag.embeddings import build_embedding_model  # noqa: E402
+from app.rag.vector_store import open_vector_store  # noqa: E402
 
 
 def _redact(text: str, *secrets: str) -> str:
@@ -44,20 +43,24 @@ def _check_chat(settings: Settings) -> bool:
     return True
 
 
-def _check_embeddings() -> bool:
-    provider = os.getenv("EMBEDDING_PROVIDER", "ollama_local")
-    model = os.getenv("OLLAMA_EMBEDDING_MODEL", "embeddinggemma")
-    host = os.getenv("OLLAMA_EMBEDDING_BASE_URL", "http://localhost:11434")
-    print(f"[embedding] provider: {provider}")
-    print(f"[embedding] model:    {model}")
-    print(f"[embedding] host:     {host}")
+def _check_qdrant() -> bool:
+    host = os.getenv("QDRANT_URL", "<not configured>")
+    model = os.getenv(
+        "QDRANT_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
+    )
+    collection = os.getenv("QDRANT_COLLECTION_NAME", "afyaplus_knowledge_base")
+    print(f"[qdrant] host:       {host}")
+    print(f"[qdrant] collection: {collection}")
+    print(f"[qdrant] model:      {model}")
     try:
-        embedding_model = build_embedding_model()
-        embedding_model.get_text_embedding("connectivity check")
+        handle = open_vector_store()
     except Exception as error:  # noqa: BLE001 - reporting only, never re-raised
-        print(f"[embedding] connection: FAILED ({type(error).__name__}: {error})")
+        api_key = os.getenv("QDRANT_API_KEY", "")
+        message = _redact(str(error), api_key)
+        print(f"[qdrant] connection: FAILED ({type(error).__name__}: {message})")
         return False
-    print("[embedding] connection: OK")
+    state = "populated" if handle.has_nodes else "empty"
+    print(f"[qdrant] connection: OK ({state} collection)")
     return True
 
 
@@ -70,9 +73,9 @@ def main() -> int:
 
     chat_ok = _check_chat(settings)
     print()
-    embedding_ok = _check_embeddings()
+    qdrant_ok = _check_qdrant()
 
-    return 0 if chat_ok and embedding_ok else 1
+    return 0 if chat_ok and qdrant_ok else 1
 
 
 if __name__ == "__main__":

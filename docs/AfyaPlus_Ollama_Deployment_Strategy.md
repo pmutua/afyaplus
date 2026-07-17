@@ -1,5 +1,10 @@
 # AfyaPlus Enterprise-Grade RAG-Powered Agent System
 
+> Historical decision record: the embedding and Chroma deployment approach in
+> this document was superseded by issue #32. The current application uses
+> Qdrant Cloud Inference for embedding, vector storage, and retrieval. Use
+> `README.md`, `.env.example`, and `docs/architecture.md` for current setup.
+
 ## Ollama and Ollama Cloud Deployment Strategy
 
 **Document status:** Implemented — see "Implementation status" below  

@@ -37,7 +37,7 @@ Examples currently detected include `+254712345678`, `0712345678`,
 
 The vault is a private dataclass field marked `repr=False`, preventing raw PII
 from appearing in normal representations. It is not passed into LangGraph,
-written to conversation checkpoints, included in Chroma metadata, or returned
+written to conversation checkpoints, included in Qdrant metadata, or returned
 by the API.
 
 Vaults are isolated per request. A placeholder invented by the model or copied
@@ -53,7 +53,7 @@ must not be treated as a durable identifier.
 | Request-local privacy vault | Yes | Mapping keys | No |
 | Agent and Ollama chat model | No | Yes | Model-dependent processing only |
 | LangGraph `InMemorySaver` | No | Yes | Process lifetime only |
-| Knowledge manuals and ChromaDB | No user message storage | Policy text/vectors | Local disk |
+| Knowledge manuals and Qdrant Cloud | No user message storage | Synthetic policy text/vectors | Managed cloud |
 | Final API response | Restored when referenced | Possibly unknown tokens | Returned to caller |
 
 ## Logging Rules
@@ -64,7 +64,7 @@ must not be treated as a durable identifier.
   durations, status codes, tool names, and sanitized error categories.
 - Never attach raw exceptions to client responses. The API currently returns a
   generic 503 message for unhandled agent failures.
-- Treat Chroma storage, knowledge documents, and any future durable checkpoint
+- Treat Qdrant collections, knowledge documents, and any future durable checkpoint
   store as controlled application data with access restrictions and backups.
 
 ## Prompt and Tool Safeguards

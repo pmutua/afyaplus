@@ -10,13 +10,8 @@ fastapi
 pydantic
 uvicorn[standard]
 
-# Embeddings
-llama-index-embeddings-ollama
-fastembed
-
 # Vector Store
-chromadb
-llama-index-vector-stores-chroma
+qdrant-client
 
 # LLM / OpenRouter
 openai

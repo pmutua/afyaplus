@@ -3,15 +3,21 @@ from pathlib import Path
 import pytest
 
 from app.agent.tools.knowledge import search_afyaplus_knowledge
-from app.rag import retrieval
+from app.rag import retrieval, vector_store
 from app.rag.retrieval import query_knowledge
+from tests.qdrant_fakes import FakeQdrantClient
+
+
+@pytest.fixture
+def qdrant_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("QDRANT_URL", "https://test.qdrant.io")
+    monkeypatch.setenv("QDRANT_API_KEY", "test-api-key")
 
 
 def test_returns_retrieved_text_with_inline_source_citation(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    qdrant_env: None,
 ) -> None:
-    monkeypatch.setenv("CI", "true")
     knowledge_dir = tmp_path / "knowledge"
     knowledge_dir.mkdir()
     (knowledge_dir / "insurance_policy.txt").write_text(
@@ -22,22 +28,21 @@ def test_returns_retrieved_text_with_inline_source_citation(
     result = query_knowledge(
         "What is the maternity waiting period?",
         knowledge_dir=knowledge_dir,
-        storage_dir=tmp_path / "chroma",
         collection_name="citation_test",
         similarity_top_k=1,
+        client=FakeQdrantClient(),
     )
 
     assert "six-month waiting period" in result
     assert "[Source: insurance_policy.txt]" in result
 
 
-def test_langchain_tool_is_scoped_and_returns_cited_policy(
-    tmp_path: Path,
+def test_langchain_tool_returns_cited_policy(
+    qdrant_env: None,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("CI", "true")
-    monkeypatch.setenv("CHROMA_STORAGE_DIR", str(tmp_path / "tool_chroma"))
-    monkeypatch.setenv("CHROMA_COLLECTION_NAME", "tool_test")
+    client = FakeQdrantClient()
+    monkeypatch.setattr(vector_store, "build_qdrant_client", lambda settings: client)
 
     result = search_afyaplus_knowledge.invoke(
         {"question": "What is the maternity coverage waiting period?"}
@@ -50,23 +55,13 @@ def test_langchain_tool_is_scoped_and_returns_cited_policy(
 
 
 def test_default_retriever_is_built_once_per_process(
-    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """query_knowledge() with default args reuses one cached retriever.
-
-    Reflects the real agent's call pattern (search_afyaplus_knowledge always
-    calls query_knowledge(question) with no explicit paths) - every question
-    in a session must not repay the cost of reopening ChromaDB and rebuilding
-    the embedding model. Calls with explicit paths (the other tests in this
-    file) always bypass this cache and build fresh instead.
-    """
-
-    monkeypatch.setenv("CI", "true")
-    monkeypatch.setenv("CHROMA_STORAGE_DIR", str(tmp_path / "cache_test"))
-    monkeypatch.setenv("CHROMA_COLLECTION_NAME", "cache_test")
+    sentinel = object()
+    monkeypatch.setattr(retrieval, "build_retriever", lambda **kwargs: sentinel)
 
     first = retrieval._cached_default_retriever(3)
     second = retrieval._cached_default_retriever(3)
 
-    assert first is second
+    assert first is sentinel
+    assert second is sentinel

@@ -6,11 +6,10 @@ application calls - it returns a langchain ChatOpenAI instance wired to
 whichever provider is configured, and callers never branch on which one is
 active.
 
-Chat and embeddings are configured independently: switching MODEL_PROVIDER
-to "ollama_cloud" does not change where embeddings run (see
-app/rag/embeddings.py) - that stays local unless EMBEDDING_PROVIDER is
-explicitly changed, so document text is never sent off-machine as a side
-effect of a chat provider switch.
+Chat and retrieval are configured independently: switching MODEL_PROVIDER
+does not change the Qdrant Cloud Inference configuration in app/rag/. A chat
+provider switch therefore cannot silently select a different embedding model
+or vector store.
 
 The OPENROUTER_API_KEY/OPENAI_API_KEY/MODEL_BASE_URL/CLOUD_MODEL and
 unprefixed OLLAMA_BASE_URL/OLLAMA_MODEL/OLLAMA_API_KEY variables belong to

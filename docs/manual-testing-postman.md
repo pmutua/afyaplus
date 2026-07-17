@@ -51,7 +51,7 @@ the brief asks for (clean error handling, no raw exceptions returned).
 
 **Purpose:** confirms the process is up before testing anything else. Not
 a dependency check — see [api.md](api.md) for why `/health` doesn't touch
-Ollama or ChromaDB.
+Ollama or Qdrant Cloud.
 
 ```
 GET http://127.0.0.1:8000/health
