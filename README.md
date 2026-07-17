@@ -53,16 +53,21 @@ app/
   models/                # Pydantic request and response schemas
   rag/                   # Chunking, embeddings, ingestion, retrieval, grounding
   safeguards/            # PII patterns, masking, de-masking, API dependency
-  config.py              # Ollama chat-model configuration
+  config.py              # Ollama local/cloud chat-model provider factory
   main.py                # FastAPI application
 docs/                    # Primary product documentation
 knowledge/               # Local insurance and clinical-routing manuals
 tests/                   # Automated test suite
 triage/                  # Foundational Week 1 triage engine
+  env.example            # Triage's own configuration template
 triage_cli.py             # Foundational triage CLI entrypoint
-.env.example             # Safe configuration template
+.env.example             # RAG Agent System configuration template
 requirements.txt         # Python dependencies
 ```
+
+Triage Engine and the RAG Agent System each read their own environment file
+(`triage/.env` and the repo-root `.env`, respectively) — see "Environment
+Configuration" below and [triage/docs/triage_engine.md](triage/docs/triage_engine.md).
 
 ## Prerequisites
 
@@ -180,15 +185,26 @@ Without activating the virtual environment, use:
 
 ## Environment Configuration
 
-The RAG API works with the safe local defaults in `.env.example`:
+The RAG API works with the safe local defaults in `.env.example`. Set
+`MODEL_PROVIDER` to switch the chat transport between local Ollama and
+Ollama Cloud without any code changes; an invalid provider, a missing cloud
+model/API key, or a malformed URL fails fast rather than silently falling
+back (`app/config.py`).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible Ollama endpoint |
-| `OLLAMA_MODEL` | `llama3.2` | Local chat model |
-| `OLLAMA_API_KEY` | `ollama` | Compatibility value required by the client |
-| `LOCAL_TIMEOUT_SECONDS` | `20.0` | Chat-model request timeout |
+| `MODEL_PROVIDER` | `ollama_local` | Chat transport: `ollama_local` or `ollama_cloud` |
+| `OLLAMA_LOCAL_BASE_URL` | `http://localhost:11434/v1` | Local OpenAI-compatible Ollama endpoint |
+| `OLLAMA_LOCAL_MODEL` | `llama3.2` | Local chat model |
+| `OLLAMA_LOCAL_API_KEY` | `ollama` | Placeholder value the local endpoint ignores |
+| `LOCAL_TIMEOUT_SECONDS` | `20.0` | Local chat-model request timeout |
+| `OLLAMA_CLOUD_BASE_URL` | `https://ollama.com/v1` | Direct Ollama Cloud endpoint |
+| `OLLAMA_CLOUD_MODEL` | *(required in cloud mode)* | Cloud chat model, e.g. `gpt-oss:120b` |
+| `OLLAMA_CLOUD_API_KEY` | *(required in cloud mode)* | Real Ollama Cloud API key — never `ollama` |
+| `CLOUD_TIMEOUT_SECONDS` | `30.0` | Cloud chat-model request timeout |
 | `AGENT_HISTORY_TOKEN_BUDGET` | `2048` | Approximate history tokens sent per model call |
+| `EMBEDDING_PROVIDER` | `ollama_local` | Embedding provider — stays local even if chat is cloud |
+| `OLLAMA_EMBEDDING_BASE_URL` | `http://localhost:11434` | Embedding host, independent of the chat host |
 | `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Semantic chunking and retrieval embedding model |
 | `CHROMA_STORAGE_DIR` | `storage/chroma` | Persistent vector-store directory |
 | `CHROMA_COLLECTION_NAME` | `afyaplus_knowledge_base` | Chroma collection name |
@@ -196,9 +212,15 @@ The RAG API works with the safe local defaults in `.env.example`:
 `CI` is an ambient automation flag, not a local `.env` setting. When present,
 it selects a deterministic test embedding instead of contacting Ollama.
 
-The cloud variables in `.env.example` belong to the foundational triage
-engine. The served RAG API does not read them. Never commit the real `.env`;
-Git excludes `.env` and persisted `storage/` data.
+Run `python scripts/verify_provider.py` after changing any of the above to
+confirm the configured chat and embedding providers actually connect — it
+never prints secrets.
+
+The foundational triage engine reads its own `triage/.env`
+(from `triage/env.example`), not this file — see
+[triage/docs/triage_engine.md](triage/docs/triage_engine.md). Never commit
+either real `.env`; Git excludes `.env`/`.env.*` at every directory depth,
+plus persisted `storage/` data.
 
 ## Verify the API
 
@@ -338,7 +360,8 @@ falls back to local Ollama, validates strict JSON, and applies conservative
 routing checks.
 
 Its cloud settings are the `OPENROUTER_API_KEY` or `OPENAI_API_KEY` option,
-`MODEL_BASE_URL`, and `CLOUD_MODEL` values in `.env.example`.
+`MODEL_BASE_URL`, and `CLOUD_MODEL` values in `triage/env.example` — its own
+environment, independent of the RAG API's repo-root `.env.example` above.
 
 Run it from the repository root after installing the shared requirements:
 

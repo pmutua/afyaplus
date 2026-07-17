@@ -17,6 +17,7 @@ import json
 import os
 import time
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
@@ -31,7 +32,11 @@ from openai import (
     RateLimitError,
 )
 
-load_dotenv()
+# Triage Engine's own environment - independent of the RAG Agent System's
+# root .env (app/config.py). Loaded by explicit path (not a bare
+# load_dotenv()) so this always reads triage/.env regardless of the
+# process's current working directory.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 CLOUD_TIMEOUT_SECONDS = 4.0
 DEFAULT_PATIENT_MESSAGE = (

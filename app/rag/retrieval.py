@@ -4,20 +4,28 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from llama_index.core.base.base_query_engine import BaseQueryEngine
+from llama_index.core.base.base_retriever import BaseRetriever
 from llama_index.core.schema import NodeWithScore
 
 from app.rag.grounding import NOT_FOUND_RESPONSE, select_grounded_sources
 from app.rag.ingestion import build_index
 
 
-def build_query_engine(
+def build_retriever(
     knowledge_dir: str | Path | None = None,
     storage_dir: str | Path | None = None,
     collection_name: str | None = None,
     similarity_top_k: int = 3,
-) -> BaseQueryEngine:
-    """Build a query engine that returns retrieved nodes without LLM synthesis."""
+) -> BaseRetriever:
+    """Build a retriever over the persisted index - no LLM synthesis involved.
+
+    Grounding only ever needs the retrieved nodes (see query_knowledge()), so
+    this returns a plain retriever rather than a full query engine: LlamaIndex's
+    query-engine/response-synthesizer path resolves a default LLM as a side
+    effect even for response_mode="no_text" (a library quirk - the NO_TEXT
+    branch of get_response_synthesizer() drops the llm kwarg it's given), which
+    would otherwise require a real or mocked LLM for no functional benefit here.
+    """
 
     if knowledge_dir is None:
         index = build_index(
@@ -30,10 +38,7 @@ def build_query_engine(
             storage_dir=storage_dir,
             collection_name=collection_name,
         )
-    return index.as_query_engine(
-        similarity_top_k=similarity_top_k,
-        response_mode="no_text",
-    )
+    return index.as_retriever(similarity_top_k=similarity_top_k)
 
 
 def _source_name(source_node: NodeWithScore) -> str:
@@ -58,14 +63,14 @@ def query_knowledge(
 
     if not question.strip():
         return "A knowledge question is required."
-    query_engine = build_query_engine(
+    retriever = build_retriever(
         knowledge_dir,
         storage_dir,
         collection_name,
         similarity_top_k,
     )
-    response = query_engine.query(question)
-    grounded_sources = select_grounded_sources(question, response.source_nodes)
+    retrieved_nodes = retriever.retrieve(question)
+    grounded_sources = select_grounded_sources(question, retrieved_nodes)
     if not grounded_sources:
         return NOT_FOUND_RESPONSE
     return "\n\n".join(_format_source(node) for node in grounded_sources)

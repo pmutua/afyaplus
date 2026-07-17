@@ -133,19 +133,40 @@ monitoring. Endpoint details are in [api.md](api.md).
 
 ## Runtime Configuration
 
+`app/config.py` implements a provider factory: `MODEL_PROVIDER` selects the
+chat transport (`ollama_local` default, or `ollama_cloud`) without any code
+changes, failing fast on an invalid provider, a missing cloud model/API key,
+or a malformed URL rather than silently falling back. Embeddings
+(`app/rag/embeddings.py`) are configured independently via
+`EMBEDDING_PROVIDER`/`OLLAMA_EMBEDDING_BASE_URL` and stay local even when
+chat uses `ollama_cloud`.
+
 | Variable | Default | Purpose |
 |---|---|---|
-| `OLLAMA_BASE_URL` | `http://localhost:11434/v1` | OpenAI-compatible Ollama endpoint |
-| `OLLAMA_MODEL` | `llama3.2` | Chat model |
-| `OLLAMA_API_KEY` | `ollama` | Required client value for local compatibility |
-| `LOCAL_TIMEOUT_SECONDS` | `20.0` | Chat request timeout |
+| `MODEL_PROVIDER` | `ollama_local` | Chat transport: `ollama_local` or `ollama_cloud` |
+| `OLLAMA_LOCAL_BASE_URL` | `http://localhost:11434/v1` | Local OpenAI-compatible Ollama endpoint |
+| `OLLAMA_LOCAL_MODEL` | `llama3.2` | Local chat model |
+| `OLLAMA_LOCAL_API_KEY` | `ollama` | Placeholder value the local endpoint ignores |
+| `LOCAL_TIMEOUT_SECONDS` | `20.0` | Local chat request timeout |
+| `OLLAMA_CLOUD_BASE_URL` | `https://ollama.com/v1` | Direct Ollama Cloud endpoint |
+| `OLLAMA_CLOUD_MODEL` | *(required in cloud mode)* | Cloud chat model, e.g. `gpt-oss:120b` |
+| `OLLAMA_CLOUD_API_KEY` | *(required in cloud mode)* | Real Ollama Cloud API key |
+| `CLOUD_TIMEOUT_SECONDS` | `30.0` | Cloud chat request timeout |
 | `AGENT_HISTORY_TOKEN_BUDGET` | `2048` | Maximum approximate history tokens per model call |
+| `EMBEDDING_PROVIDER` | `ollama_local` | Embedding provider, independent of the chat provider |
+| `OLLAMA_EMBEDDING_BASE_URL` | `http://localhost:11434` | Embedding host |
 | `OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Local embedding model |
 | `CHROMA_STORAGE_DIR` | `storage/chroma` | Persistent vector directory |
 | `CHROMA_COLLECTION_NAME` | `afyaplus_knowledge_base` | Persistent collection name |
 
-`.env` and `storage/` are excluded from Git. `.env.example` contains safe
-example values only.
+`python scripts/verify_provider.py` reports the active chat/embedding
+provider, model, and host, and confirms both actually connect, without ever
+printing secrets.
+
+`.env` and `storage/` are excluded from Git at every directory depth (this
+also covers `triage/.env`, Triage Engine's separate environment file —
+see `triage/docs/triage_engine.md`). `.env.example` contains safe example
+values only.
 
 ## Verification Strategy
 
