@@ -81,11 +81,32 @@ Configuration" below and [triage/docs/triage_engine.md](triage/docs/triage_engin
 
 ## Prerequisites
 
-- Python 3.11 or newer.
-- `pip` and Python virtual-environment support.
+- Python 3.12 (matches `.python-version`); Python 3.11+ works if you use the
+  plain `pip`/`venv` fallback below instead of `uv`.
+- [`uv`](https://docs.astral.sh/uv/) (recommended) or `pip` with Python
+  virtual-environment support.
 - A Qdrant Cloud cluster with Inference enabled.
 - Ollama installed only when using the optional local chat provider.
 - Enough local memory to run `llama3.2` when using local chat.
+
+### Installing uv
+
+`uv` manages the Python interpreter and dependency installs together, so it
+does not depend on the interpreter's own bundled `pip`/`ensurepip`. Install
+it once per machine:
+
+```powershell
+# Windows PowerShell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+```bash
+# Linux and macOS
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+See the [uv installation docs](https://docs.astral.sh/uv/getting-started/installation/)
+for other methods (pipx, Homebrew, etc.).
 
 Install Ollama from its official platform page:
 
@@ -114,7 +135,19 @@ Run all commands from the repository root—the directory containing
 
 ### Windows PowerShell
 
-Create the environment and install dependencies:
+Create the environment and install dependencies with `uv` (recommended — it
+manages its own Python 3.12 and does not depend on the interpreter's bundled
+`pip`/`ensurepip`, which can be unreliable on some Windows Python installs):
+
+```powershell
+uv venv --python 3.12 .venv
+$env:UV_HTTP_TIMEOUT = "120"  # some dependencies are large downloads; raise uv's default 30s timeout
+uv pip install --python .venv -r requirements.txt
+Copy-Item .env.example .env
+```
+
+<details>
+<summary>Alternative: plain <code>pip</code>/<code>venv</code></summary>
 
 ```powershell
 py -3 -m venv .venv
@@ -125,6 +158,8 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
+</details>
+
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
 the application. Keep the application collection dedicated and separate from
 unrelated workloads or external tools.
@@ -133,18 +168,21 @@ Pull the local models and start the application:
 
 ```powershell
 ollama pull llama3.2
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Without activating the virtual environment, use:
-
-```powershell
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 ### Linux
 
-Create the environment and install dependencies:
+Create the environment and install dependencies with `uv` (recommended):
+
+```bash
+uv venv --python 3.12 .venv
+UV_HTTP_TIMEOUT=120 uv pip install --python .venv -r requirements.txt  # some dependencies are large downloads; raise uv's default 30s timeout
+cp .env.example .env
+```
+
+<details>
+<summary>Alternative: plain <code>pip</code>/<code>venv</code></summary>
 
 ```bash
 python3 -m venv .venv
@@ -152,30 +190,35 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 cp .env.example .env
-```
-
-Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
-the application.
-
-Pull the local models and start the application:
-
-```bash
-ollama pull llama3.2
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Without activating the virtual environment, use:
-
-```bash
-.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 If `python3 -m venv` is unavailable, install the virtual-environment package
 provided by your Linux distribution, then repeat the command.
 
+</details>
+
+Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
+the application.
+
+Pull the local models and start the application:
+
+```bash
+ollama pull llama3.2
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
 ### macOS
 
-Create the environment and install dependencies:
+Create the environment and install dependencies with `uv` (recommended):
+
+```bash
+uv venv --python 3.12 .venv
+UV_HTTP_TIMEOUT=120 uv pip install --python .venv -r requirements.txt  # some dependencies are large downloads; raise uv's default 30s timeout
+cp .env.example .env
+```
+
+<details>
+<summary>Alternative: plain <code>pip</code>/<code>venv</code></summary>
 
 ```bash
 python3 -m venv .venv
@@ -185,6 +228,8 @@ python -m pip install -r requirements.txt
 cp .env.example .env
 ```
 
+</details>
+
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
 the application.
 
@@ -192,12 +237,6 @@ Pull the local models and start the application:
 
 ```bash
 ollama pull llama3.2
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
-
-Without activating the virtual environment, use:
-
-```bash
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
