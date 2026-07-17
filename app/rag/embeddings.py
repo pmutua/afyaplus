@@ -8,11 +8,19 @@ environment:
   providers set automatically (e.g. GitHub Actions sets CI=true).
 - Otherwise: Ollama's OLLAMA_EMBEDDING_MODEL (default "embeddinggemma";
   "all-minilm" is a supported alternative), reachable via
-  OLLAMA_BASE_URL. The same model backs both local development (Ollama on
-  localhost) and production (self-hosted Ollama elsewhere) - only
-  OLLAMA_BASE_URL differs between them. Raises a clear error if Ollama
-  isn't reachable or the model isn't pulled, rather than silently
+  OLLAMA_EMBEDDING_BASE_URL. The same model backs both local development
+  (Ollama on localhost) and production (self-hosted Ollama elsewhere) - only
+  OLLAMA_EMBEDDING_BASE_URL differs between them. Raises a clear error if
+  Ollama isn't reachable or the model isn't pulled, rather than silently
   substituting something else.
+
+Embeddings are configured independently from the chat model
+(app/config.py): EMBEDDING_PROVIDER, OLLAMA_EMBEDDING_BASE_URL, and
+OLLAMA_EMBEDDING_MODEL are separate variables from MODEL_PROVIDER and the
+chat OLLAMA_LOCAL_*/OLLAMA_CLOUD_* settings, so switching the chat model to
+Ollama Cloud never changes where document embeddings run - they stay on
+the local Ollama instance by default. Only EMBEDDING_PROVIDER=ollama_local
+is currently supported.
 
 DeterministicHashEmbedding is a bag-of-words hashing-trick embedding
 (Weinberger et al. feature hashing): no network call, no API key. Unlike
@@ -91,12 +99,12 @@ class DeterministicHashEmbedding(BaseEmbedding):
 def _ollama_host() -> str:
     """Root host for the native Ollama client.
 
-    Derived from OLLAMA_BASE_URL, which includes a /v1 suffix for the
-    OpenAI-compatible client the triage engine uses elsewhere; the native
-    ollama client used here wants just the host root.
+    Derived from OLLAMA_EMBEDDING_BASE_URL. Accepts either the bare host or
+    a URL with an /v1 suffix (the OpenAI-compatible shape used elsewhere) -
+    the native ollama client used here wants just the host root.
     """
 
-    base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/v1")
+    base_url = os.getenv("OLLAMA_EMBEDDING_BASE_URL", "http://localhost:11434")
     return base_url.removesuffix("/v1")
 
 
@@ -104,9 +112,17 @@ def _ollama_embedding() -> BaseEmbedding:
     """Build the Ollama-backed embedding model, raising a clear error if unavailable.
 
     Backs both local development (Ollama on localhost) and production
-    (self-hosted Ollama elsewhere) - only OLLAMA_BASE_URL differs between
-    the two.
+    (self-hosted Ollama elsewhere) - only OLLAMA_EMBEDDING_BASE_URL differs
+    between the two.
     """
+
+    embedding_provider = os.getenv("EMBEDDING_PROVIDER", "ollama_local")
+    if embedding_provider != "ollama_local":
+        raise RuntimeError(
+            f"EMBEDDING_PROVIDER={embedding_provider!r} is not supported. "
+            "Only 'ollama_local' is currently implemented - embeddings "
+            "intentionally stay local regardless of the chat MODEL_PROVIDER."
+        )
 
     host = _ollama_host()
     try:
@@ -116,7 +132,7 @@ def _ollama_embedding() -> BaseEmbedding:
     except (httpx.HTTPError, ValueError) as error:
         raise RuntimeError(
             f"Ollama isn't reachable at {host}. Start it with `ollama serve`, "
-            "or set OLLAMA_BASE_URL to point at a running instance."
+            "or set OLLAMA_EMBEDDING_BASE_URL to point at a running instance."
         ) from error
 
     is_pulled = any(
