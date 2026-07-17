@@ -12,6 +12,7 @@ uvicorn[standard]
 
 # Embeddings
 llama-index-embeddings-ollama
+fastembed
 
 # Vector Store
 chromadb

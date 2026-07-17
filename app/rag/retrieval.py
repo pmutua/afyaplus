@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from pathlib import Path
 
 from llama_index.core.base.base_retriever import BaseRetriever
@@ -41,6 +42,22 @@ def build_retriever(
     return index.as_retriever(similarity_top_k=similarity_top_k)
 
 
+@lru_cache(maxsize=1)
+def _cached_default_retriever(similarity_top_k: int) -> BaseRetriever:
+    """Process-lifetime cache for the production (env-resolved) retriever.
+
+    Building a retriever opens ChromaDB's PersistentClient, constructs the
+    embedding model, and reloads the persisted index - real work that must
+    happen once per process, not on every knowledge-tool call (the agent
+    calls query_knowledge() fresh on every question). Only used for the
+    default knowledge_dir/storage_dir/collection_name (env-resolved) - see
+    query_knowledge() below. Callers passing explicit paths (tests using a
+    tmp_path fixture) always bypass this and build fresh.
+    """
+
+    return build_retriever(similarity_top_k=similarity_top_k)
+
+
 def _source_name(source_node: NodeWithScore) -> str:
     metadata = source_node.metadata
     source = metadata.get("file_name") or metadata.get("file_path")
@@ -63,12 +80,15 @@ def query_knowledge(
 
     if not question.strip():
         return "A knowledge question is required."
-    retriever = build_retriever(
-        knowledge_dir,
-        storage_dir,
-        collection_name,
-        similarity_top_k,
-    )
+    if knowledge_dir is None and storage_dir is None and collection_name is None:
+        retriever = _cached_default_retriever(similarity_top_k)
+    else:
+        retriever = build_retriever(
+            knowledge_dir,
+            storage_dir,
+            collection_name,
+            similarity_top_k,
+        )
     retrieved_nodes = retriever.retrieve(question)
     grounded_sources = select_grounded_sources(question, retrieved_nodes)
     if not grounded_sources:

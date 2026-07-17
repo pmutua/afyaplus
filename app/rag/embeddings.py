@@ -1,4 +1,4 @@
-"""Ollama embedding configuration for the AfyaPlus RAG Agent System.
+"""Embedding configuration for the AfyaPlus RAG Agent System.
 
 build_embedding_model() selects an embedding model for the current
 environment:
@@ -6,21 +6,28 @@ environment:
 - CI: DeterministicHashEmbedding - no network call, so automated test runs
   stay fast and reproducible. Detected via the ambient CI env var most CI
   providers set automatically (e.g. GitHub Actions sets CI=true).
-- Otherwise: Ollama's OLLAMA_EMBEDDING_MODEL (default "embeddinggemma";
-  "all-minilm" is a supported alternative), reachable via
-  OLLAMA_EMBEDDING_BASE_URL. The same model backs both local development
-  (Ollama on localhost) and production (self-hosted Ollama elsewhere) - only
-  OLLAMA_EMBEDDING_BASE_URL differs between them. Raises a clear error if
-  Ollama isn't reachable or the model isn't pulled, rather than silently
-  substituting something else.
+- Otherwise, EMBEDDING_PROVIDER picks between two local backends (default
+  "ollama_local"):
+  - "ollama_local": Ollama's OLLAMA_EMBEDDING_MODEL (default
+    "embeddinggemma"; "all-minilm" is a supported alternative), reachable
+    via OLLAMA_EMBEDDING_BASE_URL. Raises a clear error if Ollama isn't
+    reachable or the model isn't pulled, rather than silently substituting
+    something else. Requires a running Ollama daemon somewhere reachable -
+    fine for local dev, but means a deployed instance either bundles Ollama
+    or talks to a separate Ollama service over the network.
+  - "fastembed_local": an in-process embedding via the fastembed library
+    (ONNX Runtime, no PyTorch, no daemon, no network call at request time),
+    default model FASTEMBED_MODEL="BAAI/bge-small-en-v1.5" (67MB, 384-dim).
+    Recommended for deployments (e.g. Railway) where running or reaching a
+    separate Ollama instance just for embeddings isn't worth the extra
+    service - see issue #31.
 
 Embeddings are configured independently from the chat model
 (app/config.py): EMBEDDING_PROVIDER, OLLAMA_EMBEDDING_BASE_URL, and
 OLLAMA_EMBEDDING_MODEL are separate variables from MODEL_PROVIDER and the
 chat OLLAMA_LOCAL_*/OLLAMA_CLOUD_* settings, so switching the chat model to
-Ollama Cloud never changes where document embeddings run - they stay on
-the local Ollama instance by default. Only EMBEDDING_PROVIDER=ollama_local
-is currently supported.
+Ollama Cloud never changes where document embeddings run - both local
+backends keep embeddings on-machine, never sent to a third-party API.
 
 DeterministicHashEmbedding is a bag-of-words hashing-trick embedding
 (Weinberger et al. feature hashing): no network call, no API key. Unlike
@@ -39,16 +46,20 @@ from __future__ import annotations
 import hashlib
 import os
 import re
+from typing import Any
 
 import httpx
 from dotenv import load_dotenv
 from llama_index.core.base.embeddings.base import BaseEmbedding
+from pydantic import PrivateAttr
 
 load_dotenv()
 
 _TOKEN_PATTERN = re.compile(r"[a-z0-9]+")
 _DEFAULT_DIMENSIONS = 256
 _OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "embeddinggemma")
+_FASTEMBED_MODEL = os.getenv("FASTEMBED_MODEL", "BAAI/bge-small-en-v1.5")
+_VALID_EMBEDDING_PROVIDERS = ("ollama_local", "fastembed_local")
 
 
 class DeterministicHashEmbedding(BaseEmbedding):
@@ -96,6 +107,52 @@ class DeterministicHashEmbedding(BaseEmbedding):
         return self._embed(text)
 
 
+class FastEmbedLocalEmbedding(BaseEmbedding):
+    """In-process embedding via fastembed (ONNX Runtime) - no daemon, no network call.
+
+    llama-index-embeddings-fastembed (the obvious integration package) pins
+    fastembed<0.2.0, unresolvable against a current fastembed install - this
+    is a small hand-rolled wrapper instead, the same pattern as
+    DeterministicHashEmbedding above.
+
+    Loading the ONNX model (first construction only - downloads on first
+    use, then reads from the local cache) takes real time; each _embed()
+    call afterward is fast (single-digit milliseconds for short text).
+    Callers on a hot path must construct this once and reuse it - see
+    app/rag/retrieval.py's cached default retriever.
+    """
+
+    fastembed_model_name: str = _FASTEMBED_MODEL
+    _client: Any = PrivateAttr(default=None)
+
+    def __init__(self, model_name: str = _FASTEMBED_MODEL, **kwargs: object) -> None:
+        super().__init__(
+            model_name=f"fastembed-{model_name}",
+            fastembed_model_name=model_name,
+            **kwargs,
+        )
+        from fastembed import TextEmbedding
+
+        self._client = TextEmbedding(model_name=model_name)
+
+    @classmethod
+    def class_name(cls) -> str:
+        return "FastEmbedLocalEmbedding"
+
+    def _embed(self, text: str) -> list[float]:
+        (vector,) = self._client.embed([text])
+        return vector.tolist()
+
+    def _get_query_embedding(self, query: str) -> list[float]:
+        return self._embed(query)
+
+    async def _aget_query_embedding(self, query: str) -> list[float]:
+        return self._embed(query)
+
+    def _get_text_embedding(self, text: str) -> list[float]:
+        return self._embed(text)
+
+
 def _ollama_host() -> str:
     """Root host for the native Ollama client.
 
@@ -113,16 +170,9 @@ def _ollama_embedding() -> BaseEmbedding:
 
     Backs both local development (Ollama on localhost) and production
     (self-hosted Ollama elsewhere) - only OLLAMA_EMBEDDING_BASE_URL differs
-    between the two.
+    between the two. Requires a reachable Ollama daemon; see
+    _fastembed_embedding() for a daemon-free alternative.
     """
-
-    embedding_provider = os.getenv("EMBEDDING_PROVIDER", "ollama_local")
-    if embedding_provider != "ollama_local":
-        raise RuntimeError(
-            f"EMBEDDING_PROVIDER={embedding_provider!r} is not supported. "
-            "Only 'ollama_local' is currently implemented - embeddings "
-            "intentionally stay local regardless of the chat MODEL_PROVIDER."
-        )
 
     host = _ollama_host()
     try:
@@ -150,9 +200,26 @@ def _ollama_embedding() -> BaseEmbedding:
     return OllamaEmbedding(model_name=_OLLAMA_EMBEDDING_MODEL, base_url=host)
 
 
+def _fastembed_embedding() -> BaseEmbedding:
+    """Build the in-process fastembed model - no daemon, no network call at request time."""
+
+    return FastEmbedLocalEmbedding(model_name=_FASTEMBED_MODEL)
+
+
 def build_embedding_model() -> BaseEmbedding:
     """Select the embedding model for the current environment. See module docstring."""
 
     if os.getenv("CI"):
         return DeterministicHashEmbedding()
+
+    embedding_provider = os.getenv("EMBEDDING_PROVIDER", "ollama_local")
+    if embedding_provider not in _VALID_EMBEDDING_PROVIDERS:
+        raise RuntimeError(
+            f"EMBEDDING_PROVIDER={embedding_provider!r} is not supported. "
+            f"Must be one of {_VALID_EMBEDDING_PROVIDERS} - embeddings "
+            "intentionally never leave the local boundary regardless of the "
+            "chat MODEL_PROVIDER."
+        )
+    if embedding_provider == "fastembed_local":
+        return _fastembed_embedding()
     return _ollama_embedding()

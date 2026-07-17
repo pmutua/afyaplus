@@ -58,3 +58,19 @@ def test_ci_short_circuit_wins_over_an_invalid_embedding_provider(
     model = embeddings.build_embedding_model()
 
     assert isinstance(model, embeddings.DeterministicHashEmbedding)
+
+
+def test_fastembed_local_provider_is_dispatched(monkeypatch: pytest.MonkeyPatch) -> None:
+    """EMBEDDING_PROVIDER=fastembed_local routes to the in-process backend.
+
+    Monkeypatches _fastembed_embedding rather than letting it run for real -
+    a real call downloads an ONNX model on first use, unsuitable for a fast
+    unit test (same reason _ollama_embedding is never exercised for real
+    here either).
+    """
+
+    monkeypatch.setenv("EMBEDDING_PROVIDER", "fastembed_local")
+    sentinel = object()
+    monkeypatch.setattr(embeddings, "_fastembed_embedding", lambda: sentinel)
+
+    assert embeddings.build_embedding_model() is sentinel
