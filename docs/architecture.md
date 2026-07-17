@@ -40,6 +40,8 @@ prescribe, choose a dose, or replace qualified clinical or insurance review.
    vault immediately before FastAPI serializes the response.
 
 Detailed call ordering is shown in [sequence-diagram.md](sequence-diagram.md).
+Deployment configuration and collection operations are documented in
+[deployment.md](deployment.md).
 
 ## Grounded Knowledge Pipeline
 
@@ -51,7 +53,10 @@ Inference embeds each chunk during upload.
 Vectors live in the `QDRANT_COLLECTION_NAME` collection. The application sends
 Qdrant `Document` inference objects using the configured managed model and a
 384-dimensional cosine collection. A populated collection is reused without
-re-ingesting the manuals.
+re-ingesting the manuals. The collection is initialized lazily on the first
+knowledge query, and payload metadata is limited to chunk text and source
+filename. Source, chunking, model, or dimension changes require a deliberate
+new collection or rebuild.
 
 Retrieval uses `similarity_top_k=3`. Qdrant embeds the query and searches the
 same collection. The adapter returns LlamaIndex source nodes without asking a
@@ -185,6 +190,8 @@ synthetic-data smoke test verifies the real managed inference path.
 
 - Qdrant Cloud removes local embedding compute but makes retrieval dependent on
   network availability, cloud credentials, region, and provider governance.
+- Qdrant's free managed inference models are US-hosted; this synthetic-data
+  prototype requires a separate region/contract review before real PHI.
 - Approximate token counting is fast and model-independent but not identical to
   llama3.2 tokenization.
 - Lexical source validation is deterministic and conservative but can reject a

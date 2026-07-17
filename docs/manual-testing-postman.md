@@ -38,10 +38,14 @@ the brief asks for (clean error handling, no raw exceptions returned).
    ```powershell
    python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
    ```
-2. Postman (or `curl`/`Invoke-RestMethod`) pointed at `http://127.0.0.1:8000`.
-3. For every `POST /chat` request: header `Content-Type: application/json`,
+2. `QDRANT_URL` and `QDRANT_API_KEY` configured in the gitignored `.env`, with
+   Cloud Inference enabled for the cluster.
+3. The application collection may be absent initially; the first grounded
+   request creates and populates it from synthetic `knowledge/` documents.
+4. Postman (or `curl`/`Invoke-RestMethod`) pointed at `http://127.0.0.1:8000`.
+5. For every `POST /chat` request: header `Content-Type: application/json`,
    body type `raw` / `JSON` in Postman.
-4. A fresh `thread_id` per independent scenario (reusing one across
+6. A fresh `thread_id` per independent scenario (reusing one across
    unrelated scenarios will pull in prior conversation history — see
    scenario K, which does this **on purpose**).
 

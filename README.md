@@ -41,6 +41,8 @@ Raw request
 Detailed documentation:
 
 - [Architecture](docs/architecture.md)
+- [Deployment guide](docs/deployment.md)
+- [Deployment decision record](docs/deployment-architecture-research.md)
 - [Sequence diagrams](docs/sequence-diagram.md)
 - [Privacy safeguards](docs/privacy.md)
 - [API reference](docs/api.md)
@@ -64,6 +66,11 @@ triage_cli.py             # Foundational triage CLI entrypoint
 .env.example             # RAG Agent System configuration template
 requirements.txt         # Python dependencies
 ```
+
+The Qdrant collection is created and populated lazily on the first knowledge
+query. Once non-empty, it is reused across restarts. Rebuild into a new
+collection after changing knowledge sources, chunking, embedding model, or
+dimensions; see the [deployment guide](docs/deployment.md#collection-lifecycle).
 
 Triage Engine and the RAG Agent System each read their own environment file
 (`triage/.env` and the repo-root `.env`, respectively) — see "Environment

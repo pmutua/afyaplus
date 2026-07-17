@@ -51,9 +51,9 @@ must not be treated as a durable identifier.
 |---|---:|---:|---:|
 | FastAPI request validation/dependency | Briefly | Yes | No |
 | Request-local privacy vault | Yes | Mapping keys | No |
-| Agent and Ollama chat model | No | Yes | Model-dependent processing only |
+| Agent and configured chat model | No | Yes | Provider-dependent processing only |
 | LangGraph `InMemorySaver` | No | Yes | Process lifetime only |
-| Knowledge manuals and Qdrant Cloud | No user message storage | Synthetic policy text/vectors | Managed cloud |
+| Knowledge manuals and Qdrant Cloud | No by design | Masked query transient; synthetic policy chunks | Managed collection |
 | Final API response | Restored when referenced | Possibly unknown tokens | Returned to caller |
 
 ## Logging Rules
@@ -66,6 +66,9 @@ must not be treated as a durable identifier.
   generic 503 message for unhandled agent failures.
 - Treat Qdrant collections, knowledge documents, and any future durable checkpoint
   store as controlled application data with access restrictions and backups.
+- Treat Qdrant and Ollama Cloud as external processors. A masked query can
+  still contain sensitive clinical context even after supported identifiers
+  are removed, so masking alone does not authorize real-PHI processing.
 
 ## Prompt and Tool Safeguards
 
@@ -103,9 +106,15 @@ model call.
 - Add PII-safe audit events, access review, retention, and deletion workflows.
 - Use a durable memory store only after defining tenant isolation and expiry.
 - Add human review for uncertain policy, clinical-risk, and benefits decisions.
+- Confirm service-specific contracts, processing regions, retention, and
+  deletion behavior for Qdrant Cloud Inference and the selected chat provider.
 - Perform privacy, security, prompt-injection, and dependency reviews before
   processing real patient data.
 
 The end-to-end API test records the exact fake-model input and verifies that
 all three supported PII classes remain masked while the displayed response is
 correctly restored.
+
+The [deployment guide](deployment.md#privacy-and-production-readiness) and
+[architecture decision record](deployment-architecture-research.md) document
+the cloud-processing boundary and the conditions for reconsidering it.

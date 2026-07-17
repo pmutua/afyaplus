@@ -14,7 +14,14 @@ Copy-Item .env.example .env
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env`. Never copy a
 real key into `.env.example`.
 
-Install Ollama separately and ensure the required models are available:
+The first grounded knowledge request may take longer because it creates and
+populates an empty Qdrant collection. Later requests reuse the process-level
+retriever and persisted collection. See [deployment.md](deployment.md) for
+collection lifecycle and Railway configuration.
+
+When using the default `MODEL_PROVIDER=ollama_local`, install Ollama separately
+and ensure the local chat model is available. Cloud-only deployments can skip
+this step:
 
 ```powershell
 ollama pull llama3.2
@@ -134,6 +141,10 @@ Status: `503 Service Unavailable`.
 The knowledge tool handles its own retrieval exceptions and normally returns
 a temporary-unavailability tool result to the agent instead of propagating an
 exception to the API.
+
+Qdrant configuration errors, inference failures, and network timeouts follow
+that same controlled knowledge-tool failure path. Client responses never
+include the configured endpoint key or provider exception details.
 
 ## Example PowerShell Request
 

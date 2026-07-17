@@ -1,5 +1,32 @@
 # Request Sequence Diagrams
 
+## Knowledge Collection Initialization
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Tool as Knowledge tool
+    participant Llama as LlamaIndex
+    participant Qdrant as Qdrant Cloud Inference
+
+    Tool->>Qdrant: Open application collection
+    alt Collection missing
+        Qdrant->>Qdrant: Create 384-d cosine collection
+    end
+    Qdrant-->>Tool: Point count
+    alt Collection empty
+        Tool->>Llama: Load documents and sentence-aware chunks
+        Llama-->>Tool: Text nodes with source filenames
+        Tool->>Qdrant: Upload Document inference points
+        Qdrant->>Qdrant: Embed and persist vectors
+    else Collection populated
+        Tool->>Tool: Reuse persisted knowledge
+    end
+```
+
+The collection is application-only and distinct from MCP/tooling collections.
+Only chunk text and source filename metadata are uploaded.
+
 ## Grounded Chat Request
 
 ```mermaid
