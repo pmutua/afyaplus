@@ -26,16 +26,22 @@ insurance review.
 
 ## Architecture
 
-```text
-Browser `/ui` or API `/chat` request
-  -> Pydantic validation
-  -> PII masking and request-local vault
-  -> LangChain/LangGraph agent and bounded thread memory
-       -> LlamaIndex + Qdrant Cloud knowledge tool
-       -> validated medication-volume tool
-  -> grounded masked response
-  -> request-local de-masking
-  -> Chainlit message or FastAPI response
+```mermaid
+flowchart TD
+    User["Browser /ui or API /chat request"]
+    Validate["Pydantic validation"]
+    Mask["PII masking + request-local vault"]
+    Agent["LangChain/LangGraph agent<br/>bounded thread memory"]
+    Knowledge["LlamaIndex + Qdrant Cloud<br/>knowledge tool"]
+    Calculator["Validated medication-volume tool"]
+    Response["Grounded masked response"]
+    Demask["Request-local de-masking"]
+    Output["Chainlit message or FastAPI response"]
+
+    User --> Validate --> Mask --> Agent
+    Agent --> Knowledge --> Response
+    Agent --> Calculator --> Response
+    Response --> Demask --> Output
 ```
 
 Detailed documentation:
