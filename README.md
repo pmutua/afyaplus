@@ -188,8 +188,13 @@ Without activating the virtual environment, use:
 The RAG API works with the safe local defaults in `.env.example`. Set
 `MODEL_PROVIDER` to switch the chat transport between local Ollama and
 Ollama Cloud without any code changes; an invalid provider, a missing cloud
-model/API key, or a malformed URL fails fast rather than silently falling
-back (`app/config.py`).
+model/API key, or a malformed URL fails fast at startup (`app/config.py`).
+
+At request time, if the configured provider fails (e.g. local Ollama runs
+out of memory), the agent retries once against the other provider - but
+only when it's fully configured, and always with a logged `WARNING` naming
+both providers, so a fallback is never silent or ambiguous about which
+provider actually answered.
 
 | Variable | Default | Purpose |
 |---|---|---|

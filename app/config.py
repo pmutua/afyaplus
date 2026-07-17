@@ -20,13 +20,19 @@ intentionally not read here.
 
 from __future__ import annotations
 
+import logging
 import os
 from dataclasses import dataclass
+from typing import Any
 
 from dotenv import load_dotenv
+from langchain.agents.middleware import AgentMiddleware, ModelRequest, ModelResponse, wrap_model_call
 from langchain_openai import ChatOpenAI
 
+logger = logging.getLogger(__name__)
+
 _VALID_PROVIDERS = ("ollama_local", "ollama_cloud")
+_OTHER_PROVIDER = {"ollama_local": "ollama_cloud", "ollama_cloud": "ollama_local"}
 
 
 class ConfigurationError(RuntimeError):
@@ -108,3 +114,56 @@ def build_chat_model(settings: Settings) -> ChatOpenAI:
         timeout=settings.timeout_seconds,
         temperature=0,
     )
+
+
+def build_fallback_settings(primary: Settings) -> Settings | None:
+    """Resolve the *other* provider's settings as a fallback candidate.
+
+    Returns None (not an error) when the other provider isn't fully
+    configured - e.g. ollama_cloud without OLLAMA_CLOUD_MODEL/
+    OLLAMA_CLOUD_API_KEY set. Local always has usable defaults, so it is
+    always a valid fallback when cloud is primary; cloud is only a valid
+    fallback when its required vars are present.
+    """
+
+    other = _OTHER_PROVIDER[primary.provider]
+    try:
+        return _cloud_settings() if other == "ollama_cloud" else _local_settings()
+    except ConfigurationError:
+        return None
+
+
+def build_fallback_middleware(primary: Settings) -> AgentMiddleware | None:
+    """Build agent middleware that retries a failed chat call on the other provider.
+
+    Explicit and loudly logged, not silent: this is a deliberate exception to
+    "never silently fall back to another provider" (see module docstring) -
+    a fallback only ever happens when the other provider is fully configured,
+    and always logs a warning naming both providers so it's never ambiguous
+    which one actually served a given request. If no fallback is available,
+    or the fallback attempt also fails, the original exception propagates
+    unchanged (the existing FastAPI 503 behavior for a fully-failed request
+    is untouched).
+    """
+
+    fallback_settings = build_fallback_settings(primary)
+    if fallback_settings is None:
+        return None
+    fallback_model = build_chat_model(fallback_settings)
+
+    @wrap_model_call
+    def _fallback_on_failure(
+        request: ModelRequest[Any],
+        handler: Any,
+    ) -> ModelResponse[Any]:
+        try:
+            return handler(request)
+        except Exception:
+            logger.warning(
+                "Chat provider %r failed; falling back to %r.",
+                primary.provider,
+                fallback_settings.provider,
+            )
+            return handler(request.override(model=fallback_model))
+
+    return _fallback_on_failure

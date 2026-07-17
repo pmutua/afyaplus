@@ -12,15 +12,18 @@ from app.agent.agent import create_agent
 from app.agent.memory import thread_config
 from app.agent.prompts import SYSTEM_PROMPT
 from app.agent.tools import calculate_medication_volume, search_afyaplus_knowledge
-from app.config import build_chat_model, load_settings
+from app.config import build_chat_model, build_fallback_middleware, load_settings
 from app.models import ChatResponse, HealthResponse
 from app.safeguards.middleware import PrivacyContext, protect_chat_request
 
 
 def _production_agent() -> CompiledStateGraph:
-    model = build_chat_model(load_settings())
+    settings = load_settings()
+    model = build_chat_model(settings)
     tools = [calculate_medication_volume, search_afyaplus_knowledge]
-    return create_agent(model, tools, SYSTEM_PROMPT)
+    fallback_middleware = build_fallback_middleware(settings)
+    middleware = [fallback_middleware] if fallback_middleware is not None else []
+    return create_agent(model, tools, SYSTEM_PROMPT, middleware)
 
 
 def _message_text(message: BaseMessage) -> str:

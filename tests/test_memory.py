@@ -1,3 +1,4 @@
+import logging
 from typing import Any
 
 import pytest
@@ -9,6 +10,7 @@ from pydantic import PrivateAttr
 
 from app.agent.agent import create_agent
 from app.agent.memory import history_token_budget, thread_config
+from app.config import Settings, build_fallback_middleware
 
 
 class RecordingFakeChatModel(FakeMessagesListChatModel):
@@ -92,3 +94,61 @@ def test_rejects_invalid_history_token_budget(
 
     with pytest.raises(ValueError, match="AGENT_HISTORY_TOKEN_BUDGET"):
         history_token_budget()
+
+
+class FailingChatModel(FakeMessagesListChatModel):
+    """Fake model that always raises, simulating a provider outage."""
+
+    def _generate(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        raise RuntimeError("simulated provider outage")
+
+
+def test_agent_falls_back_to_other_provider_when_primary_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    primary_settings = Settings(
+        provider="ollama_local",
+        base_url="http://primary.invalid",
+        model="primary-model",
+        api_key="primary-key",
+        timeout_seconds=1.0,
+    )
+    fallback_settings = Settings(
+        provider="ollama_cloud",
+        base_url="http://fallback.invalid",
+        model="fallback-model",
+        api_key="fallback-key",
+        timeout_seconds=1.0,
+    )
+    fallback_model = FakeMessagesListChatModel(
+        responses=[AIMessage(content="Fallback answer")]
+    )
+    monkeypatch.setattr(
+        "app.config.build_fallback_settings", lambda primary: fallback_settings
+    )
+    monkeypatch.setattr("app.config.build_chat_model", lambda settings: fallback_model)
+
+    middleware = build_fallback_middleware(primary_settings)
+    assert middleware is not None
+    agent = create_agent(
+        FailingChatModel(responses=[]),
+        [],
+        "You are a test assistant.",
+        [middleware],
+    )
+
+    with caplog.at_level(logging.WARNING):
+        result = agent.invoke(
+            {"messages": [("user", "Habari")]}, thread_config("fallback-session")
+        )
+
+    assert result["messages"][-1].content == "Fallback answer"
+    assert "ollama_local" in caplog.text
+    assert "ollama_cloud" in caplog.text

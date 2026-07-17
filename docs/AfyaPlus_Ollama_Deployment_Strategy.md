@@ -656,6 +656,18 @@ It must not:
 
 The rest of the application should receive a chat-model interface without knowing which provider is active.
 
+**Deliberate, tracked exception (issue #28):** "silently" is the operative
+word above — `build_fallback_middleware()` in `app/config.py` retries a
+failed chat request against the *other* provider at request time, but only
+when it's fully configured, and only with a logged `WARNING` naming both
+providers. This is a real, explicit exception to the "never silently fall
+back" rule, added deliberately (not an oversight) because a fully-failed
+request otherwise means an outright `503` for the user even when a working
+alternative provider is sitting right there configured. See
+`build_fallback_settings()` for the resolution logic and
+`app/agent/agent.py`'s optional `middleware` parameter for how it's wired
+into the agent.
+
 ---
 
 ## 12. Connectivity Verification

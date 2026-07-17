@@ -135,11 +135,19 @@ monitoring. Endpoint details are in [api.md](api.md).
 
 `app/config.py` implements a provider factory: `MODEL_PROVIDER` selects the
 chat transport (`ollama_local` default, or `ollama_cloud`) without any code
-changes, failing fast on an invalid provider, a missing cloud model/API key,
-or a malformed URL rather than silently falling back. Embeddings
-(`app/rag/embeddings.py`) are configured independently via
-`EMBEDDING_PROVIDER`/`OLLAMA_EMBEDDING_BASE_URL` and stay local even when
-chat uses `ollama_cloud`.
+changes, failing fast at startup on an invalid provider, a missing cloud
+model/API key, or a malformed URL. Embeddings (`app/rag/embeddings.py`) are
+configured independently via `EMBEDDING_PROVIDER`/`OLLAMA_EMBEDDING_BASE_URL`
+and stay local even when chat uses `ollama_cloud`.
+
+At request time, if a chat call to the configured provider fails (e.g. local
+Ollama runs out of memory), `build_fallback_middleware()` retries once
+against the *other* provider - but only when that other provider is fully
+configured (local always has usable defaults; cloud requires
+`OLLAMA_CLOUD_MODEL`/`OLLAMA_CLOUD_API_KEY`), and always logs a `WARNING`
+naming both providers so a fallback is never silent or ambiguous about which
+provider actually answered. If no fallback is available or it also fails,
+the original exception propagates to the existing `503` handling below.
 
 | Variable | Default | Purpose |
 |---|---|---|
