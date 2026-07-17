@@ -23,6 +23,7 @@ PRODUCTION_VARIABLES = {
     "RATE_LIMIT_REQUESTS_PER_MINUTE",
     "RATE_LIMIT_REQUESTS_PER_DAY",
     "RATE_LIMIT_TRUST_RAILWAY_PROXY",
+    "CHAINLIT_COT_MODE",
 }
 
 
@@ -71,6 +72,7 @@ def test_production_template_has_only_required_cloud_variables() -> None:
     assert set(variables) == PRODUCTION_VARIABLES
     assert variables["MODEL_PROVIDER"] == "ollama_cloud"
     assert variables["RATE_LIMIT_TRUST_RAILWAY_PROXY"] == "true"
+    assert variables["CHAINLIT_COT_MODE"] == "hidden"
     assert "OLLAMA_LOCAL" not in "\n".join(variables)
     assert variables["OLLAMA_CLOUD_API_KEY"].startswith("<")
     assert variables["QDRANT_API_KEY"].startswith("<")

@@ -134,6 +134,7 @@ key set. Configure these non-secret values in Railway:
 | `RATE_LIMIT_REQUESTS_PER_MINUTE` | `10` |
 | `RATE_LIMIT_REQUESTS_PER_DAY` | `100` |
 | `RATE_LIMIT_TRUST_RAILWAY_PROXY` | `true` |
+| `CHAINLIT_COT_MODE` | `hidden` |
 
 Set `OLLAMA_CLOUD_MODEL`, `OLLAMA_CLOUD_API_KEY`, `QDRANT_URL`, and
 `QDRANT_API_KEY` as Railway variables from an approved secret source. Never

@@ -145,8 +145,12 @@ Chainlit converts invalid UI messages and unhandled backend failures into
 generic chat messages without returning provider details. Chainlit uses a
 WebSocket connection for interactive sessions; this does not change the
 shared application privacy boundary.
-Its configuration hides chain-of-thought and disables file uploads because the
-current privacy boundary accepts text messages only.
+Its configuration disables file uploads because the current privacy boundary
+accepts text messages only. Chain-of-thought/tool-call display defaults to
+hidden and is overridable per environment with `CHAINLIT_COT_MODE` (see
+[privacy.md](privacy.md)); the LangChain callback handler backing it only
+ever observes the already-masked agent invocation, so raw PII is never
+exposed even when steps are visible.
 
 The health endpoint is a process liveness check; it does not prove that Ollama
 or Qdrant is ready. Production deployment still needs readiness checks,
@@ -193,6 +197,7 @@ the original exception propagates to the existing `503` handling below.
 | `RATE_LIMIT_REQUESTS_PER_MINUTE` | `10` | Rolling minute allowance per API IP or UI session |
 | `RATE_LIMIT_REQUESTS_PER_DAY` | `100` | Rolling 24-hour allowance per API IP or UI session |
 | `RATE_LIMIT_TRUST_RAILWAY_PROXY` | `false` | Trust Railway `X-Real-IP`; enable only on Railway |
+| `CHAINLIT_COT_MODE` | `hidden` | Chain-of-thought display: `hidden`, `tool_call`, or `full`; keep `hidden` outside local debugging |
 
 `python scripts/verify_provider.py` reports the active chat and Qdrant
 model, collection, and host, and confirms both actually connect, without ever

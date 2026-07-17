@@ -53,9 +53,17 @@ Chainlit stores only a generated `ui-<uuid>` routing key in its user session.
 The current UI has no authentication or durable chat history. The browser
 interface does not bypass masking, but it is still an additional network entry
 point and must not be publicly exposed before access controls are added.
-Chain-of-thought display and spontaneous file uploads are disabled in
-`.chainlit/config.toml` to avoid exposing internal traces or accepting content
-the text-only privacy pipeline does not process.
+Spontaneous file uploads are disabled in `.chainlit/config.toml` because the
+text-only privacy pipeline does not process uploaded content.
+
+Chain-of-thought display defaults to hidden (`.chainlit/config.toml`'s `cot`
+setting) and is overridable per environment with `CHAINLIT_COT_MODE`
+(`hidden`, `tool_call`, or `full`) - keep it `hidden` in any shared or
+production environment; only raise it for local debugging. The LangChain
+callback handler that powers this display observes the same
+`privacy.masked_message` sent to the model, so raw PII is never exposed even
+when tool-call steps are visible - only masked placeholders, retrieved
+knowledge excerpts, and calculator inputs/outputs ever appear in a step.
 
 ## Data by Component
 

@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from langchain_core.callbacks import CallbackManagerForLLMRun
+from langchain_core.callbacks import BaseCallbackHandler, CallbackManagerForLLMRun
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import AIMessage, BaseMessage
 from langchain_core.outputs import ChatResult
@@ -52,3 +52,24 @@ def test_shared_chat_masks_input_and_restores_output() -> None:
     assert "<<PHONE_1>>" in model_input
     assert response.response == f"I will contact {raw_phone}."
     assert response.thread_id == "ui-test-254"
+
+
+def test_run_chat_attaches_callbacks_to_agent_invocation() -> None:
+    class RecordingCallbackHandler(BaseCallbackHandler):
+        def __init__(self) -> None:
+            self.chain_starts = 0
+
+        def on_chain_start(self, *args: Any, **kwargs: Any) -> None:
+            self.chain_starts += 1
+
+    model = RecordingChatModel(responses=[AIMessage(content="Ready to help.")])
+    agent = create_agent(model, [], "You are a test assistant.")
+    handler = RecordingCallbackHandler()
+
+    run_chat(
+        ChatRequest(message="Hello there", thread_id="ui-test-256"),
+        agent,
+        callbacks=[handler],
+    )
+
+    assert handler.chain_starts > 0

@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Any
 
+from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.messages import BaseMessage
 from langgraph.graph.state import CompiledStateGraph
 
@@ -53,14 +54,27 @@ def _latest_response(result: dict[str, Any]) -> str:
 def run_chat(
     request: ChatRequest,
     agent: CompiledStateGraph | None = None,
+    callbacks: list[BaseCallbackHandler] | None = None,
 ) -> ChatResponse:
-    """Run one validated turn through masking, the agent, and de-masking."""
+    """Run one validated turn through masking, the agent, and de-masking.
+
+    `callbacks` is used by the Chainlit UI to attach a LangChain callback
+    handler (chain-of-thought step display); the API path never sets it.
+    LangChain's sync callback manager runs async-only handlers (like
+    Chainlit's) via its own event loop, so this stays synchronous rather
+    than switching to `ainvoke` - the agent's history-trimming middleware
+    (`app/agent/memory.py`) only implements the sync `wrap_model_call` hook
+    and raises `NotImplementedError` under `ainvoke`.
+    """
 
     privacy = protect_chat_request(request)
     chat_agent = agent or production_agent()
+    config = thread_config(privacy.thread_id)
+    if callbacks:
+        config = {**config, "callbacks": callbacks}
     result = chat_agent.invoke(
         {"messages": [("user", privacy.masked_message)]},
-        thread_config(privacy.thread_id),
+        config,
     )
     response = _latest_response(result)
     return ChatResponse(
