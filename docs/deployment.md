@@ -67,8 +67,8 @@ guide](https://docs.ollama.com/cloud). The application uses its documented
 | `QDRANT_EMBEDDING_DIMENSIONS` | `384` | Model-compatible vector size |
 | `QDRANT_TIMEOUT_SECONDS` | `30.0` | Qdrant request timeout |
 
-Do not reuse the MCP/tooling collection `afyaplus-claude-notes`. Model and
-dimension changes require a new or rebuilt collection.
+Keep this collection dedicated to the AfyaPlus application. Model and dimension
+changes require a new or rebuilt collection.
 
 ## Local Verification
 
@@ -130,6 +130,10 @@ key set. Configure these non-secret values in Railway:
 | `QDRANT_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` |
 | `QDRANT_EMBEDDING_DIMENSIONS` | `384` |
 | `QDRANT_TIMEOUT_SECONDS` | `30.0` |
+| `RATE_LIMIT_ENABLED` | `true` |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE` | `10` |
+| `RATE_LIMIT_REQUESTS_PER_DAY` | `100` |
+| `RATE_LIMIT_TRUST_RAILWAY_PROXY` | `true` |
 
 Set `OLLAMA_CLOUD_MODEL`, `OLLAMA_CLOUD_API_KEY`, `QDRANT_URL`, and
 `QDRANT_API_KEY` as Railway variables from an approved secret source. Never
@@ -157,6 +161,13 @@ the Uvicorn worker count at one while conversation checkpoints remain
 in-memory; multiple workers can route successive socket or API turns to
 different, isolated memory stores. Add a durable shared checkpointer and
 session-affinity design before horizontal scaling.
+
+The same one-worker constraint applies to rate limiting. API limits are keyed
+by a salted hash of Railway's documented `X-Real-IP`; this header is trusted
+only because `RATE_LIMIT_TRUST_RAILWAY_PROXY=true` is confined to the Railway
+service. Chainlit limits are per generated browser session. Process restarts
+clear all allowances, and replicas would maintain separate counters. Use a
+shared Redis-backed limiter before scaling beyond one process.
 
 Docker remains deliberately deferred for this capstone. Do not add Dockerfile
 or Compose configuration as part of deployment documentation maintenance.
@@ -207,7 +218,9 @@ history match the Railway rollback.
 6. Ask an out-of-scope question and confirm `Information not found.` behavior.
 7. Check Qdrant collection count and inference usage in the Cloud console.
 8. Check application logs for sanitized provider/fallback warnings only.
-9. Run the Postman scenarios in [manual-testing-postman.md](manual-testing-postman.md).
+9. Exceed the configured synthetic chat allowance and confirm HTTP 429 plus an
+   integer `Retry-After` header without a model call.
+10. Run the Postman scenarios in [manual-testing-postman.md](manual-testing-postman.md).
 
 ## Failure and Recovery
 
@@ -217,6 +230,7 @@ history match the Railway rollback.
 | Qdrant timeout/outage | Retrieval fails without exposing credentials | Check cluster status, networking, and timeout |
 | Chat provider failure | Configured fallback is attempted once when available | Review warning and provider health |
 | Chainlit socket disconnect | UI reconnects or reports loss of connection | Check Railway service health and WebSocket path |
+| HTTP 429 | Client exceeded a rolling allowance | Wait for `Retry-After`; investigate sustained abuse |
 | Wrong model dimensions | Qdrant rejects incompatible vectors | Use a compatible collection or rebuild |
 | Stale knowledge | Existing collection continues serving old chunks | Build and verify a new collection name |
 

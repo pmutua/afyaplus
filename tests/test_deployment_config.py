@@ -19,6 +19,10 @@ PRODUCTION_VARIABLES = {
     "QDRANT_EMBEDDING_DIMENSIONS",
     "QDRANT_TIMEOUT_SECONDS",
     "AGENT_HISTORY_TOKEN_BUDGET",
+    "RATE_LIMIT_ENABLED",
+    "RATE_LIMIT_REQUESTS_PER_MINUTE",
+    "RATE_LIMIT_REQUESTS_PER_DAY",
+    "RATE_LIMIT_TRUST_RAILWAY_PROXY",
 }
 
 
@@ -66,6 +70,7 @@ def test_production_template_has_only_required_cloud_variables() -> None:
 
     assert set(variables) == PRODUCTION_VARIABLES
     assert variables["MODEL_PROVIDER"] == "ollama_cloud"
+    assert variables["RATE_LIMIT_TRUST_RAILWAY_PROXY"] == "true"
     assert "OLLAMA_LOCAL" not in "\n".join(variables)
     assert variables["OLLAMA_CLOUD_API_KEY"].startswith("<")
     assert variables["QDRANT_API_KEY"].startswith("<")

@@ -135,6 +135,12 @@ Invalid API schemas return FastAPI's HTTP 422 response. Agent, model, and
 tool-loop exceptions are translated to HTTP 503 with a generic message so
 internal details are not returned to the caller.
 
+Before `POST /chat` reaches validation or model execution, an in-process
+rolling limiter checks a salted hash of the resolved client IP. Railway's
+`X-Real-IP` is accepted only when `RATE_LIMIT_TRUST_RAILWAY_PROXY=true`; local
+and other deployments ignore that header and use the socket client address.
+Exceeded limits return HTTP 429 and `Retry-After` without invoking the agent.
+
 Chainlit converts invalid UI messages and unhandled backend failures into
 generic chat messages without returning provider details. Chainlit uses a
 WebSocket connection for interactive sessions; this does not change the
@@ -143,9 +149,9 @@ Its configuration hides chain-of-thought and disables file uploads because the
 current privacy boundary accepts text messages only.
 
 The health endpoint is a process liveness check; it does not prove that Ollama
-or Qdrant is ready. Production deployment should add readiness
-checks, authentication, rate limiting, structured PII-safe audit events, and
-monitoring. Endpoint details are in [api.md](api.md).
+or Qdrant is ready. Production deployment still needs readiness checks,
+authentication, structured PII-safe audit events, and monitoring. Endpoint
+details are in [api.md](api.md).
 
 ## Runtime Configuration
 
@@ -173,7 +179,7 @@ the original exception propagates to the existing `503` handling below.
 | `OLLAMA_LOCAL_API_KEY` | `ollama` | Placeholder value the local endpoint ignores |
 | `LOCAL_TIMEOUT_SECONDS` | `20.0` | Local chat request timeout |
 | `OLLAMA_CLOUD_BASE_URL` | `https://ollama.com/v1` | Direct Ollama Cloud endpoint |
-| `OLLAMA_CLOUD_MODEL` | *(required in cloud mode)* | Cloud chat model, e.g. `gpt-oss:120b` |
+| `OLLAMA_CLOUD_MODEL` | *(required in cloud mode)* | Cloud chat model, e.g. `gpt-oss:20b-cloud` |
 | `OLLAMA_CLOUD_API_KEY` | *(required in cloud mode)* | Real Ollama Cloud API key |
 | `CLOUD_TIMEOUT_SECONDS` | `30.0` | Cloud chat request timeout |
 | `AGENT_HISTORY_TOKEN_BUDGET` | `2048` | Maximum approximate history tokens per model call |
@@ -183,6 +189,10 @@ the original exception propagates to the existing `503` handling below.
 | `QDRANT_EMBEDDING_MODEL` | `sentence-transformers/all-MiniLM-L6-v2` | Managed embedding model |
 | `QDRANT_EMBEDDING_DIMENSIONS` | `384` | Dense vector dimensions |
 | `QDRANT_TIMEOUT_SECONDS` | `30.0` | Cloud request timeout |
+| `RATE_LIMIT_ENABLED` | `true` | Enable chat abuse prevention |
+| `RATE_LIMIT_REQUESTS_PER_MINUTE` | `10` | Rolling minute allowance per API IP or UI session |
+| `RATE_LIMIT_REQUESTS_PER_DAY` | `100` | Rolling 24-hour allowance per API IP or UI session |
+| `RATE_LIMIT_TRUST_RAILWAY_PROXY` | `false` | Trust Railway `X-Real-IP`; enable only on Railway |
 
 `python scripts/verify_provider.py` reports the active chat and Qdrant
 model, collection, and host, and confirms both actually connect, without ever
@@ -214,7 +224,8 @@ managed inference path.
   relevant synonym that shares no normalized keyword with the question.
 - Regex masking covers specified identifiers, not every possible personal or
   clinical identifier.
-- The current service has no authentication, authorization, rate limiting,
-  durable memory, distributed locking, or production audit sink.
+- The current service has no authentication, authorization, durable memory,
+  distributed limiter/checkpointer, or production audit sink. Process restarts
+  reset limits, and new Chainlit sessions receive new allowances.
 - Human review remains required for uncertainty, clinical risk, coverage
   decisions, and any action affecting patient care or benefits.

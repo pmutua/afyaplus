@@ -126,8 +126,8 @@ Copy-Item .env.example .env
 ```
 
 Set `QDRANT_URL` and `QDRANT_API_KEY` in the gitignored `.env` before starting
-the application. Keep the application collection separate from any MCP/tooling
-collection.
+the application. Keep the application collection dedicated and separate from
+unrelated workloads or external tools.
 
 Pull the local models and start the application:
 
@@ -349,6 +349,20 @@ The complete masked checkpoint remains in process while only the bounded slice
 is sent to the model. Approximate counting is fast and model-independent, but
 it is not identical to llama3.2's tokenizer.
 
+## Abuse-Prevention Rate Limits
+
+`POST /chat` is limited per client IP to 10 requests per rolling minute and
+100 per rolling 24 hours by default. A blocked request returns HTTP 429 with a
+`Retry-After` header before the agent or cloud model is called. Chainlit applies
+the same limits per browser chat session before model use.
+
+The limiter stores only salted hashes and timestamps in process memory. Its
+counters reset on restart and are not shared across replicas; keep one Railway
+worker or replace it with a shared Redis-backed limiter before scaling. Because
+the UI is unauthenticated, a user can create a new browser session to obtain a
+new UI allowance. Rate limiting reduces casual abuse but is not authentication
+or DDoS protection.
+
 ## Privacy and Compliance Guardrails
 
 The safeguards are designed to support principles in Kenya's
@@ -378,9 +392,11 @@ spaces or hyphens require additional controls before real patient use. See the
 
 ## Current Operational Limitations
 
-- No authentication, authorization, rate limiting, or production audit sink.
-- The Chainlit UI is intentionally unauthenticated and must remain private until
-  authentication and authorization are added.
+- No authentication, authorization, or production audit sink.
+- Rate limiting is process-local; Chainlit limits are per session and can be
+  bypassed by starting another unauthenticated session.
+- The Chainlit UI remains unsuitable for real patient data without
+  authentication and authorization.
 - Conversation memory is process-local and is not shared across workers.
 - Health checks report process liveness, not Ollama or Qdrant readiness.
 - Local model quality and latency depend on host hardware.

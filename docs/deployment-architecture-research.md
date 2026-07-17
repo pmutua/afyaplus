@@ -60,9 +60,9 @@ metadata.file_name
 No absolute filesystem path, API key, user message, privacy vault, or raw
 patient identifier belongs in the collection.
 
-The application collection is `afyaplus_knowledge_base`. The separate
-`afyaplus-claude-notes` MCP collection is tooling state and must never be used
-by the application.
+The application collection is `afyaplus_knowledge_base`. Keep it dedicated to
+the deployed application and separate from unrelated workloads or external
+tools.
 
 ## Chunking Trade-off
 

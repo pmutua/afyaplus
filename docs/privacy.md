@@ -108,13 +108,19 @@ model call.
   because each vault is deliberately discarded after its own request.
 - In-memory checkpoints are not durable, but masked messages still remain in
   process memory until the process ends.
+- The rate limiter retains salted client/session hashes and timestamps only;
+  raw client identifiers are not used as stored keys.
 - The prototype has no authentication, authorization, encryption policy,
-  retention scheduler, rate limiting, or production audit-log service.
+  retention scheduler, distributed limiter, or production audit-log service.
+- Rate-limit state resets on restart, and an unauthenticated user can evade the
+  Chainlit session limit by opening a new chat session.
 
 ## Operational Requirements Before Production
 
 - Add authenticated identities and role-based authorization.
 - Apply those controls to both `/ui` WebSockets and HTTP API routes.
+- Replace the in-process limiter with a shared Redis-backed implementation
+  before running multiple workers or replicas.
 - Add transport encryption and documented encryption-at-rest controls.
 - Expand PII detection from an approved data inventory and measure recall.
 - Add PII-safe audit events, access review, retention, and deletion workflows.

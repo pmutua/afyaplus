@@ -158,6 +158,24 @@ Qdrant configuration errors, inference failures, and network timeouts follow
 that same controlled knowledge-tool failure path. Client responses never
 include the configured endpoint key or provider exception details.
 
+### Rate-Limit Error
+
+`POST /chat` is limited per client IP before request content reaches the agent.
+The default rolling limits are 10 requests per minute and 100 per 24 hours.
+An exceeded limit produces:
+
+```json
+{
+  "detail": "Too many requests. Try again in 60 seconds."
+}
+```
+
+Status: `429 Too Many Requests`. The integer `Retry-After` response header
+contains the minimum wait in seconds. `/health`, `/docs`, and static UI traffic
+do not consume chat allowances. Chainlit message submissions use the same
+limits per generated browser-session ID rather than IP because the
+unauthenticated Chainlit message hook has no trustworthy client address.
+
 ## Example PowerShell Request
 
 ```powershell
@@ -176,8 +194,7 @@ Invoke-RestMethod `
 ## Current Operational Boundaries
 
 The API and Chainlit UI are a capstone prototype. They currently have no
-authentication, authorization, rate limiting, durable/distributed memory, or
-production audit sink. Bind the application to localhost for development and
-do not expose it to untrusted networks or submit real patient data without
-adding those controls. In particular, do not expose `/ui` publicly merely
-because it is easier to use than the API.
+authentication, authorization, durable/distributed memory, or production audit
+sink. Rate-limit counters reset on restart, are not shared across replicas, and
+the per-session UI limit can be bypassed by starting another session. Do not
+submit real patient data without adding the remaining production controls.

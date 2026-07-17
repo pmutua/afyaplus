@@ -24,8 +24,9 @@ sequenceDiagram
     end
 ```
 
-The collection is application-only and distinct from MCP/tooling collections.
-Only chunk text and source filename metadata are uploaded.
+The application collection is dedicated and not shared with unrelated
+workloads or external tools. Only chunk text and source filename metadata are
+uploaded.
 
 ## Grounded Chat Request
 

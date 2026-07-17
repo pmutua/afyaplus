@@ -9,9 +9,15 @@ from pydantic import ValidationError
 
 from app.chat import run_chat
 from app.models import ChatRequest
+from app.safeguards.rate_limiting import (
+    InMemoryRateLimiter,
+    load_rate_limit_settings,
+    retry_message,
+)
 
 THREAD_ID_KEY = "afyaplus_thread_id"
 UNAVAILABLE_MESSAGE = "The AfyaPlus assistant is temporarily unavailable."
+UI_RATE_LIMITER = InMemoryRateLimiter(load_rate_limit_settings())
 
 
 def _new_thread_id() -> str:
@@ -25,6 +31,16 @@ def _session_thread_id() -> str:
     thread_id = _new_thread_id()
     cl.user_session.set(THREAD_ID_KEY, thread_id)
     return thread_id
+
+
+def _ui_rate_limit_message(
+    thread_id: str,
+    limiter: InMemoryRateLimiter = UI_RATE_LIMITER,
+) -> str | None:
+    decision = limiter.check(f"ui:{thread_id}")
+    if decision.allowed:
+        return None
+    return retry_message(decision.retry_after_seconds)
 
 
 @cl.on_chat_start
@@ -52,6 +68,11 @@ async def handle_message(message: cl.Message) -> None:
             content="Please enter a message between 1 and 8,000 characters.",
             author="AfyaPlus",
         ).send()
+        return
+
+    limited_message = _ui_rate_limit_message(request.thread_id)
+    if limited_message is not None:
+        await cl.Message(content=limited_message, author="AfyaPlus").send()
         return
 
     try:
