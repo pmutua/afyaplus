@@ -46,7 +46,7 @@ def _to_node(point: Any) -> NodeWithScore:
 def build_retriever(
     knowledge_dir: str | Path | None = None,
     collection_name: str | None = None,
-    similarity_top_k: int = 3,
+    similarity_top_k: int = 5,
     client: QdrantClient | None = None,
 ) -> BaseRetriever:
     """Ensure knowledge is indexed, then build a Qdrant-backed retriever."""
@@ -84,7 +84,7 @@ def query_knowledge(
     question: str,
     knowledge_dir: str | Path | None = None,
     collection_name: str | None = None,
-    similarity_top_k: int = 3,
+    similarity_top_k: int = 5,
     client: QdrantClient | None = None,
 ) -> str:
     """Return grounded source excerpts with inline filename citations."""

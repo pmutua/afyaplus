@@ -61,7 +61,7 @@ knowledge query, and payload metadata is limited to chunk text and source
 filename. Source, chunking, model, or dimension changes require a deliberate
 new collection or rebuild.
 
-Retrieval uses `similarity_top_k=3`. Qdrant embeds the query and searches the
+Retrieval uses `similarity_top_k=5`. Qdrant embeds the query and searches the
 same collection. The adapter returns LlamaIndex source nodes without asking a
 second LLM to synthesize an answer. A
 deterministic relevance check retains only nodes that share substantive,
@@ -227,6 +227,18 @@ managed inference path.
   llama3.2 tokenization.
 - Lexical source validation is deterministic and conservative but can reject a
   relevant synonym that shares no normalized keyword with the question.
+- A question that mixes verification identifiers (member ID, phone, email)
+  with a substantive policy question in one message can occasionally return
+  `Information not found.` even though the policy question is answerable -
+  observed intermittently (roughly 1 in 5 in manual testing) because
+  Qdrant's managed query embedding is not guaranteed bit-identical between
+  calls, and a compound query can sit near a similarity boundary between the
+  verification-requirements chunk and the actually-relevant policy chunk.
+  Mitigated, not eliminated, by two changes: the system prompt now
+  instructs the agent to pass only the substantive question (stripping
+  identifiers) to `search_afyaplus_knowledge`, and `similarity_top_k` was
+  raised from 3 to 5 for more headroom. This is a conservative failure mode
+  (refuses rather than guesses), not a hallucination risk.
 - Regex masking covers specified identifiers, not every possible personal or
   clinical identifier.
 - The current service has no authentication, authorization, durable memory,

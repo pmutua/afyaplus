@@ -55,7 +55,7 @@ sequenceDiagram
     Agent->>Model: System prompt, masked history, tool schemas
     Model-->>Agent: Call search_afyaplus_knowledge
     Agent->>Tool: Execute masked policy question
-    Tool->>RAG: Query top 3 source nodes
+    Tool->>RAG: Query top 5 source nodes
     RAG->>RAG: Validate relevance and add citations
     RAG-->>Tool: Grounded excerpts or Information not found.
     Tool-->>Agent: Tool result
