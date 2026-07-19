@@ -14,6 +14,7 @@ from app.safeguards.rate_limiting import (
     install_chat_rate_limiting,
     load_rate_limit_settings,
 )
+from app.utils.logging import configure_logging
 
 
 def create_app(
@@ -25,6 +26,7 @@ def create_app(
 ) -> FastAPI:
     """Create the app with optional test agent and Chainlit UI mount."""
 
+    configure_logging()
     chat_agent = agent or production_agent()
     application = FastAPI(title="AfyaPlus RAG Agent System", version="1.0.0")
     limits = rate_limit_settings or load_rate_limit_settings()

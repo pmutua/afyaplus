@@ -44,6 +44,29 @@ from appearing in normal representations. It is not passed into LangGraph,
 written to conversation checkpoints, included in Qdrant metadata, or returned
 by the API.
 
+## Observability: Verifying Masking From Application Logs
+
+`app/safeguards/middleware.py` logs both halves of the mask/demask round
+trip at `INFO` level, so a reviewer can directly confirm the privacy
+boundary is doing its job by reading application logs, without needing to
+read source code or trust an unverified claim:
+
+- On masking (`protect_chat_request`): logs the **masked** message (e.g.
+  `Masked 1 PII item(s) for thread <id>: My phone is <<PHONE_1>>`) only
+  when at least one identifier was found. The raw value never appears in
+  this log line - only the placeholder token, by construction, since the
+  logged string is `masked.masked_text`, not the original request text.
+- On de-masking (`PrivacyContext.restore_output`): logs only a **count** of
+  placeholders restored (e.g. `Restored 1 placeholder(s) for thread <id>.`)
+  - never the restored text itself, since that is precisely the point in
+    the pipeline where real PII reappears for the user.
+
+Process-wide logging is configured once in `app/utils/logging.py` (called
+from `create_app()`), covering both the FastAPI `/chat` route and the
+Chainlit UI mounted in the same process. `tests/test_middleware.py`
+includes regression tests asserting raw PII never appears in a captured
+log record for either log line.
+
 Vaults are isolated per request. A placeholder invented by the model or copied
 from another request has no mapping in the current vault and therefore remains
 unexpanded. Placeholder numbering is an internal implementation detail and
