@@ -6,8 +6,9 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
-from llama_index.core import SimpleDirectoryReader
+from llama_index.core import Document, SimpleDirectoryReader
 from llama_index.core.schema import BaseNode
+from pypdf import PdfReader
 from qdrant_client import QdrantClient, models
 
 from app.rag.chunking import build_node_parser
@@ -40,8 +41,31 @@ def _point(node: BaseNode, inference: InferenceConfig) -> models.PointStruct:
     )
 
 
+def _pdf_documents(knowledge_dir: Path) -> list[Document]:
+    """Extract text from PDFs directly via pypdf.
+
+    SimpleDirectoryReader has no PDF reader registered by default (that
+    lives in the much heavier llama-index-readers-file package); without
+    one it silently reads a PDF's raw bytes as plain text instead of
+    parsing it, producing unusable binary garbage.
+    """
+
+    documents = []
+    for pdf_path in sorted(knowledge_dir.glob("*.pdf")):
+        reader = PdfReader(str(pdf_path))
+        text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
+        documents.append(Document(text=text, metadata={"file_name": pdf_path.name}))
+    return documents
+
+
 def _load_nodes(knowledge_dir: str | Path) -> list[BaseNode]:
-    documents = SimpleDirectoryReader(str(knowledge_dir)).load_data()
+    directory = Path(knowledge_dir)
+    text_documents = (
+        SimpleDirectoryReader(str(directory), required_exts=[".txt"]).load_data()
+        if any(directory.glob("*.txt"))
+        else []
+    )
+    documents = text_documents + _pdf_documents(directory)
     return build_node_parser().get_nodes_from_documents(documents)
 
 
