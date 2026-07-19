@@ -109,6 +109,12 @@ def test_factory_selection_switches_transport(monkeypatch: pytest.MonkeyPatch) -
     assert cloud_model.openai_api_base == "https://ollama.com/v1"
 
 
+def test_chat_model_uses_zero_temperature_for_deterministic_answers() -> None:
+    model = build_chat_model(load_settings())
+
+    assert model.temperature == 0
+
+
 def test_cloud_api_key_never_appears_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MODEL_PROVIDER", "ollama_cloud")
     monkeypatch.setenv("OLLAMA_CLOUD_MODEL", "gpt-oss:120b")
