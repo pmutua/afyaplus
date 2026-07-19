@@ -1,0 +1,118 @@
+AfyaPlus Health — Medication Formulation and Dosage-Calculation Reference
+(Synthetic reference document for capstone RAG grounding. Not real clinical
+guidance. Does not replace the separate Triage Engine component.)
+
+1. Purpose and Scope
+
+This document lists standard commercial formulation concentrations for
+medications commonly referenced in AfyaPlus clinical-routing conversations,
+so that a qualified clinician who has already decided both the drug and the
+dose can look up its available concentration and use AfyaPlus's validated
+calculator tool to convert that dose into an administration volume.
+
+This document does NOT recommend which drug to use, what dose is
+appropriate for a given patient, or how a dose should be adjusted for age,
+weight, renal function, or any other clinical factor. Those determinations
+must be made by a qualified clinician using accepted clinical references
+and professional judgment outside this system. AfyaPlus's role is limited
+to arithmetic: given a dose in milligrams and a concentration in milligrams
+per millilitre that a clinician has already supplied, the calculator tool
+returns the corresponding volume in millilitres. See Section 7 for
+questions this system will not answer.
+
+2. How to Use This Reference With the Calculator Tool
+
+The `calculate_medication_volume` tool takes exactly two clinician-supplied
+numeric inputs — `prescribed_dose_mg` and `concentration_mg_per_ml` — and
+returns the volume to administer. A typical workflow is:
+
+1. The clinician decides the drug and the dose in milligrams (not sourced
+   from this system).
+2. The clinician confirms which commercial concentration of that drug is
+   in stock, either from this reference or the product label in hand —
+   concentrations vary by manufacturer and market, so the label always
+   takes precedence over this document if they differ.
+3. AfyaPlus's calculator tool divides the dose by the concentration to
+   return the volume in millilitres.
+
+Example: a clinician has already decided on a 250 mg dose of a medication
+supplied at 125 mg/5 mL (i.e. 25 mg/mL). The tool computes 250 / 25 = 10 mL.
+AfyaPlus never selects the 250 mg figure itself — that number must already
+come from the clinician.
+
+3. Oral Liquid Formulations (Common Concentrations)
+
+- Amoxicillin oral suspension: commonly supplied at 125 mg/5 mL or
+  250 mg/5 mL.
+- Paracetamol (acetaminophen) oral suspension: commonly supplied at
+  120 mg/5 mL or 250 mg/5 mL.
+- Ibuprofen oral suspension: commonly supplied at 100 mg/5 mL.
+- Amoxicillin-clavulanate oral suspension: commonly supplied at
+  125 mg/31.25 mg per 5 mL or 250 mg/62.5 mg per 5 mL (the clavulanate
+  component is not covered by AfyaPlus's calculator tool, which supports
+  single-active-ingredient volume calculations only).
+- Azithromycin oral suspension: commonly supplied at 200 mg/5 mL.
+- Cefixime oral suspension: commonly supplied at 100 mg/5 mL.
+- Metronidazole oral suspension: commonly supplied at 200 mg/5 mL.
+- Oral rehydration salts (ORS): supplied as a fixed-sachet formulation
+  reconstituted in a fixed volume of water per the manufacturer's
+  instructions; this is a reconstitution ratio, not a dose-to-volume
+  calculation, and is outside the calculator tool's scope.
+
+4. Injectable Formulations (Common Concentrations)
+
+- Benzylpenicillin (crystalline penicillin): commonly reconstituted to
+  1,000,000 IU per vial; concentration after reconstitution depends on the
+  diluent volume used and must be confirmed against the product insert
+  before any volume calculation.
+- Ceftriaxone: commonly reconstituted to 1 g per 10 mL (100 mg/mL) for
+  intramuscular use, or per the product insert for intravenous use.
+- Gentamicin injection: commonly supplied at 40 mg/mL or 80 mg/2 mL.
+- Diclofenac injection: commonly supplied at 25 mg/mL (75 mg/3 mL).
+- Dexamethasone injection: commonly supplied at 4 mg/mL.
+
+Injectable reconstitution and administration carry higher risk than oral
+liquids; AfyaPlus's calculator tool performs the same dose-to-volume
+arithmetic for injectables as for oral liquids, but reconstitution steps,
+diluent choice, and infusion rate are outside its scope and remain entirely
+a clinical decision.
+
+5. Units Reference
+
+- mg = milligram (dose unit this system's calculator tool expects).
+- mL = millilitre (volume unit this system's calculator tool returns).
+- mg/mL = concentration, i.e. milligrams of active drug per millilitre of
+  formulation — the second input the calculator tool expects.
+- IU = international unit, used for some biologics and antibiotics (e.g.
+  benzylpenicillin); IU-based products must be converted to an mg/mL or
+  equivalent concentration figure from the product insert before use with
+  this system's calculator tool, which operates on mass-based
+  concentrations only.
+
+6. Storage Reference
+
+Most oral liquid antibiotic suspensions listed in Section 3 are dispensed
+as a dry powder reconstituted with water at the pharmacy and require
+refrigeration (2-8°C) after reconstitution, with a limited use-by window
+(commonly 7-14 days) printed on the label. Injectable formulations in
+Section 4 vary in storage requirements by product; always follow the
+product insert and cold-chain requirements rather than this reference for
+storage decisions.
+
+7. Explicit Out-of-Scope Questions
+
+Consistent with AfyaPlus's safety baseline, this system does not answer
+questions that ask it to choose or recommend a dose, such as:
+
+- "What dose of [drug] should I give a [age]-year-old child?"
+- "How much [drug] is safe for a patient weighing [X] kg?"
+- "Is [dose] of [drug] too much for this patient?"
+- "Which antibiotic should I prescribe for this presentation?"
+
+These are clinical decisions requiring a qualified clinician's judgment,
+current weight- or age-based pediatric/adult dosing references, and
+patient-specific factors this system has no access to and is not designed
+to evaluate. AfyaPlus responds to such questions by declining to provide a
+dose recommendation rather than guessing, the same way it responds
+"Information not found." to any question its knowledge base cannot
+support with evidence.
