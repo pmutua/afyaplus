@@ -234,3 +234,12 @@ managed inference path.
   reset limits, and new Chainlit sessions receive new allowances.
 - Human review remains required for uncertainty, clinical risk, coverage
   decisions, and any action affecting patient care or benefits.
+- PDF ingestion (`app/rag/ingestion.py::_pdf_documents()`) uses `pypdf`
+  directly rather than the `llama-index-readers-file` package, to avoid its
+  pandas/beautifulsoup4 transitive dependencies for readers this app
+  doesn't use. This only extracts plain text (no tables, images, or
+  multi-column layout awareness). **Future optimization**: migrate to
+  `llama-index-readers-file`'s `PDFReader` (or a more capable reader) if the
+  knowledge base needs richer PDF structure, additional file types
+  (`.docx`, `.html`, `.csv`), or better multi-column text ordering than
+  `pypdf`'s page-by-page extraction provides.
