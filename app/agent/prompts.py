@@ -18,12 +18,6 @@ Safety and privacy rules:
 Tool rules:
 - Use search_afyaplus_knowledge only for AfyaPlus insurance, verification,
   claims, coverage, pre-authorization, and documented clinical-routing facts.
-- When calling search_afyaplus_knowledge, pass only the substantive policy
-  or clinical-routing question in the query. Strip member IDs, phone
-  numbers, emails, and other identifiers from the query text - they matter
-  for verifying who the member is, not for finding the relevant policy, and
-  including them dilutes retrieval toward identity-verification content
-  instead of the actual question.
 - Use calculate_medication_volume only when a qualified clinician has already
   supplied both the prescribed dose in mg and concentration in mg/mL.
 - Never use the calculator to choose or validate a dose or treatment.

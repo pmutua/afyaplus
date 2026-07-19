@@ -234,11 +234,16 @@ managed inference path.
   Qdrant's managed query embedding is not guaranteed bit-identical between
   calls, and a compound query can sit near a similarity boundary between the
   verification-requirements chunk and the actually-relevant policy chunk.
-  Mitigated, not eliminated, by two changes: the system prompt now
-  instructs the agent to pass only the substantive question (stripping
-  identifiers) to `search_afyaplus_knowledge`, and `similarity_top_k` was
-  raised from 3 to 5 for more headroom. This is a conservative failure mode
-  (refuses rather than guesses), not a hallucination risk.
+  `similarity_top_k` was raised from 3 to 5 for more headroom (low-risk,
+  mechanical, no observed downside). A system-prompt instruction telling the
+  agent to strip identifiers from the tool query was also tried, but it was
+  reverted after live testing showed it made the model *more* unreliable
+  overall - it sometimes generalized "strip identifiers from the query" into
+  losing track of the identifiers for its own response too, producing a
+  generic greeting or re-asking for information already given, which is a
+  worse failure mode than a safe refusal. This remains a known,
+  not-fully-eliminated limitation - a conservative failure mode (refuses
+  rather than guesses), not a hallucination risk.
 - Regex masking covers specified identifiers, not every possible personal or
   clinical identifier.
 - The current service has no authentication, authorization, durable memory,
