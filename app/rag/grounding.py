@@ -59,17 +59,31 @@ def _keywords(text: str) -> set[str]:
     }
 
 
+_MAX_GROUNDED_SOURCES = 2
+
+
 def select_grounded_sources(
     question: str,
     source_nodes: Sequence[NodeWithScore],
+    max_sources: int = _MAX_GROUNDED_SOURCES,
 ) -> list[NodeWithScore]:
-    """Keep sources containing substantive terms from the user's question."""
+    """Keep the most relevant sources containing substantive terms from the
+    user's question, capped at `max_sources`.
+
+    A generic keyword shared with many chunks of a large document (e.g.
+    "AfyaPlus", "coordinate") can otherwise let every matching chunk through,
+    concatenating into an unmanageably long, disjointed wall of text that
+    overwhelms the chat model's synthesis step instead of grounding it.
+    `source_nodes` arrives ranked by similarity score, so capping preserves
+    the most relevant matches.
+    """
 
     question_keywords = _keywords(question)
     if not question_keywords:
         return []
-    return [
+    matched = [
         source_node
         for source_node in source_nodes
         if question_keywords & _keywords(source_node.text)
     ]
+    return matched[:max_sources]
