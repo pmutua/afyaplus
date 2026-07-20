@@ -115,13 +115,18 @@ If the virtual environment is not activated, install with:
 
 ## Environment Configuration
 
-Create `.env` from the example file:
+Triage Engine has its own environment file, independent of the RAG Agent
+System's repo-root `.env` (`app/config.py`). Create `triage/.env` from its
+example file:
 
 ```powershell
-Copy-Item .env.example .env
+Copy-Item triage/env.example triage/.env
 ```
 
-Set cloud credentials in `.env`. Use one of these options:
+`triage/engine.py` loads `triage/.env` by explicit path, so credentials
+placed in the repo-root `.env` instead will not be picked up.
+
+Set cloud credentials in `triage/.env`. Use one of these options:
 
 ```text
 # OpenRouter
@@ -135,7 +140,7 @@ MODEL_BASE_URL=https://api.openai.com/v1
 CLOUD_MODEL=gpt-4o-mini
 ```
 
-Local fallback settings are also in `.env`:
+Local fallback settings are also in `triage/.env`:
 
 ```text
 OLLAMA_BASE_URL=http://localhost:11434/v1

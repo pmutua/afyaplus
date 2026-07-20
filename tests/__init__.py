@@ -1,0 +1,1 @@
+"""AfyaPlus automated test package."""

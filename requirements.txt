@@ -1,3 +1,34 @@
+# Core AI Frameworks
+llama-index
+langchain
+langchain-core
+langgraph
+langchain-openai
+
+# PDF ingestion for SimpleDirectoryReader (knowledge/*.pdf) - without this,
+# PDFs are silently read as raw binary "text" instead of parsed.
+pypdf
+
+# API
+chainlit>=2.11.0,<3.0.0
+# Avoid the mypyc DLL used by newer tomli wheels, which Windows Application
+# Control blocks in the supported Python 3.14 development environment.
+tomli==2.2.1
+fastapi
+pydantic
+uvicorn[standard]
+
+# Vector Store
+qdrant-client
+
+# LLM / OpenRouter
 openai
+
+# Configuration
 python-dotenv
+
+# HTTP
 httpx
+
+# Testing
+pytest

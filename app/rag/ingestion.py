@@ -1,0 +1,91 @@
+"""Ingest the AfyaPlus knowledge base through Qdrant Cloud Inference."""
+
+from __future__ import annotations
+
+import uuid
+from dataclasses import dataclass
+from pathlib import Path
+
+from llama_index.core import Document, SimpleDirectoryReader
+from llama_index.core.schema import BaseNode
+from pypdf import PdfReader
+from qdrant_client import QdrantClient, models
+
+from app.rag.chunking import build_node_parser
+from app.rag.embeddings import InferenceConfig, inference_document
+from app.rag.vector_store import open_vector_store
+
+_KNOWLEDGE_DIR = Path(__file__).resolve().parents[2] / "knowledge"
+
+
+@dataclass(frozen=True)
+class IngestionResult:
+    """Outcome of an idempotent knowledge ingestion attempt."""
+
+    indexed_nodes: int
+    reused_existing: bool
+
+
+def _point_id(node: BaseNode) -> str:
+    source = str(node.metadata.get("file_name", "unknown"))
+    return str(uuid.uuid5(uuid.NAMESPACE_URL, f"{source}\n{node.text}"))
+
+
+def _point(node: BaseNode, inference: InferenceConfig) -> models.PointStruct:
+    metadata = {"file_name": str(node.metadata.get("file_name", "unknown"))}
+    payload = {"text": node.text, "metadata": metadata}
+    return models.PointStruct(
+        id=_point_id(node),
+        vector=inference_document(node.text, inference),
+        payload=payload,
+    )
+
+
+def _pdf_documents(knowledge_dir: Path) -> list[Document]:
+    """Extract text from PDFs directly via pypdf.
+
+    SimpleDirectoryReader has no PDF reader registered by default (that
+    lives in the much heavier llama-index-readers-file package); without
+    one it silently reads a PDF's raw bytes as plain text instead of
+    parsing it, producing unusable binary garbage.
+    """
+
+    documents = []
+    for pdf_path in sorted(knowledge_dir.glob("*.pdf")):
+        reader = PdfReader(str(pdf_path))
+        text = "\n\n".join(page.extract_text() or "" for page in reader.pages)
+        documents.append(Document(text=text, metadata={"file_name": pdf_path.name}))
+    return documents
+
+
+def _load_nodes(knowledge_dir: str | Path) -> list[BaseNode]:
+    directory = Path(knowledge_dir)
+    text_documents = (
+        SimpleDirectoryReader(str(directory), required_exts=[".txt"]).load_data()
+        if any(directory.glob("*.txt"))
+        else []
+    )
+    documents = text_documents + _pdf_documents(directory)
+    return build_node_parser().get_nodes_from_documents(documents)
+
+
+def ingest_knowledge(
+    knowledge_dir: str | Path = _KNOWLEDGE_DIR,
+    collection_name: str | None = None,
+    client: QdrantClient | None = None,
+) -> IngestionResult:
+    """Create the collection once and reuse it on later process starts."""
+
+    handle = open_vector_store(collection_name, client)
+    if handle.has_nodes:
+        return IngestionResult(indexed_nodes=0, reused_existing=True)
+    nodes = _load_nodes(knowledge_dir)
+    points = [_point(node, handle.settings.inference) for node in nodes]
+    handle.client.upload_points(
+        collection_name=handle.settings.collection_name,
+        points=points,
+        batch_size=8,
+        max_retries=3,
+        wait=True,
+    )
+    return IngestionResult(indexed_nodes=len(points), reused_existing=False)

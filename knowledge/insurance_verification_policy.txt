@@ -1,0 +1,176 @@
+AfyaPlus Health — Member Insurance Verification Policy
+(Synthetic reference document for capstone RAG grounding. Not a real
+insurance policy.)
+
+1. Plan Tiers and Coverage
+
+AfyaPlus Health offers four member plan tiers: Bronze, Silver, Gold, and
+Platinum.
+
+- Bronze covers 60% of outpatient consultation costs and 70% of inpatient
+  costs, with an annual outpatient limit of KES 50,000.
+- Silver covers 75% of outpatient costs and 80% of inpatient costs, with an
+  annual outpatient limit of KES 150,000.
+- Gold covers 85% of outpatient costs and 90% of inpatient costs, with an
+  annual outpatient limit of KES 400,000.
+- Platinum covers 100% of outpatient and inpatient costs with no annual
+  outpatient limit.
+
+All four tiers cover emergency care at 100%, regardless of pre-authorization
+status, consistent with AfyaPlus's Emergency Care Guarantee.
+
+2. Member Identification and Verification
+
+Every AfyaPlus member is issued a unique member ID in the format AP-######
+(the letters "AP", a hyphen, then six digits). Before any claim, referral, or
+insurance verification is processed, staff must confirm:
+
+- The member ID matches an active AfyaPlus account.
+- The plan status is "active", not "lapsed" or "suspended". A lapsed plan
+  has no coverage until the next premium payment clears.
+- The requested service is covered under the member's current tier.
+
+Member identity may be confirmed using the member ID together with either
+the phone number or email address on file for that account. A verification
+request is only considered complete once both the member ID and at least one
+contact identifier match AfyaPlus records.
+
+3. Waiting Periods
+
+New members are subject to the following waiting periods before coverage
+begins for non-emergency services:
+
+- General outpatient consultations: no waiting period.
+- Specialist referrals: 30-day waiting period from enrollment date.
+- Elective surgery and non-emergency inpatient procedures: 90-day waiting
+  period from enrollment date.
+- Maternity coverage: 180-day waiting period from enrollment date.
+
+Waiting periods do not apply to emergency care under any circumstances.
+
+4. Pre-Authorization Requirements
+
+The following services require pre-authorization from AfyaPlus before the
+service is rendered, except when the presenting case is a clinical
+emergency:
+
+- Any elective surgery.
+- MRI and CT imaging.
+- Specialist referrals outside of the member's assigned primary care
+  provider network.
+- Inpatient admissions expected to exceed 3 days.
+
+Pre-authorization requests are typically resolved within 2 business days.
+Emergency admissions and emergency imaging never require pre-authorization;
+they are verified retroactively within 5 business days of the emergency
+encounter.
+
+5. Claim Submission Rules
+
+Claims must be submitted within 90 days of the date of service. Claims
+submitted after this window are denied unless the delay was caused by a
+documented AfyaPlus system outage. Each claim must reference:
+
+- The member ID.
+- The date and nature of service.
+- The treating provider's registration number.
+
+6. Dependents Coverage
+
+A primary member may add a spouse and up to four dependent children under
+the age of 21 to their plan. Dependents share the primary member's plan tier
+and annual outpatient limit; they do not receive a separate limit.
+
+7. Exclusions
+
+AfyaPlus plans at all tiers exclude coverage for cosmetic procedures not
+medically necessary, experimental treatments not approved by the Kenya
+Ministry of Health, and injuries sustained during participation in
+professional contact sports. These exclusions do not apply to emergency
+stabilization care, which is always covered regardless of the underlying
+cause of injury.
+
+8. Regulatory Framework
+
+AfyaPlus Health operates as a private complementary health insurer licensed
+and supervised by the Insurance Regulatory Authority (IRA) of Kenya under
+the Insurance Act (Cap. 487). AfyaPlus plans are complementary cover: they
+sit alongside, and do not replace, the mandatory Social Health Insurance
+Fund (SHIF) administered by the Social Health Authority (SHA), Kenya's
+national social health insurance scheme established under the Social Health
+Insurance Act, 2023. Every AfyaPlus member is expected to maintain active
+SHA registration; AfyaPlus verification staff may record a member's SHA
+number alongside their AP-###### member ID for coordination-of-benefits
+purposes, but SHA registration status itself does not gate AfyaPlus
+verification or claims processing.
+
+9. Coordination of Benefits with SHA/SHIF
+
+Where a service is covered under both the member's SHIF benefit package and
+their AfyaPlus plan tier, AfyaPlus pays only the balance remaining after the
+SHIF-covered portion, up to the member's AfyaPlus tier limit — members are
+never reimbursed twice for the same billed service. Where a service is
+outside the SHIF benefit package entirely (for example, cover above SHIF's
+inpatient bed-day limits, or a benefit SHIF excludes), AfyaPlus applies its
+normal tier percentage to the full billed amount. Verification staff must
+request the SHA claim reference number (if any) before finalizing an
+AfyaPlus claim for a service that could plausibly be SHIF-covered.
+
+10. Data Protection During Verification
+
+Member verification and claims processing involve personal and health data
+protected under Kenya's Data Protection Act, 2019, and its implementing
+Data Protection Policy. Verification staff must:
+
+- Collect and process only the data fields necessary for the verification
+  or claim at hand (member ID plus one contact identifier, per Section 2) —
+  never request additional personal data "for the file" without a specific,
+  documented purpose.
+- Treat phone numbers, email addresses, member IDs, and any clinical detail
+  disclosed during verification as confidential; these must never be
+  shared outside the verification and claims workflow without the member's
+  explicit consent or a valid legal basis.
+- Honor a member's data-subject rights under the Act, including the right
+  to access, correct, or request deletion of their AfyaPlus records,
+  subject to AfyaPlus's regulatory retention obligations under the
+  Insurance Act.
+- Escalate any suspected data breach involving member records to AfyaPlus's
+  designated data protection contact immediately, consistent with the
+  Data Protection Act's breach-notification requirements.
+
+This system's own privacy-masking middleware enforces the same principle in
+software: phone numbers, emails, and member IDs are masked before reaching
+any AI model, and are restored only in the final response shown to the
+requesting user.
+
+11. Fraud Prevention and Verification Integrity
+
+Verification staff must flag, rather than silently approve or silently
+deny, any of the following for human review: a member ID presented with
+contact details that do not match AfyaPlus records; repeated verification
+attempts for the same member ID from different, unrelated contact details
+within a short period; or a claim whose service date precedes the member's
+enrollment date. No claim is auto-denied for suspected fraud without a
+documented human review — this system routes and informs, it does not make
+final fraud determinations.
+
+12. Complaints and Dispute Resolution
+
+A member who disputes a verification outcome, claim decision, or waiting
+period calculation may first escalate to AfyaPlus's internal complaints
+desk, which must acknowledge the complaint within 2 business days and
+resolve or provide a substantive response within 14 business days. If
+unresolved, the member may escalate to the IRA's Insurance Complaints and
+Compensation Fund process. Complaints alleging mishandling of personal data
+specifically may instead, or additionally, be raised with the Office of the
+Data Protection Commissioner (ODPC).
+
+13. Plan Renewal and Waiting-Period Portability
+
+AfyaPlus plans renew annually on the member's original enrollment
+anniversary. A member who upgrades tier (e.g. Silver to Gold) mid-term does
+not restart the waiting periods in Section 3 for services their prior tier
+already covered; only the incremental coverage newly available at the
+higher tier is subject to a fresh 90-day waiting period. A member who
+lapses and later re-enrolls is treated as a new member for waiting-period
+purposes, per Section 3.

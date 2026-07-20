@@ -13,10 +13,14 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
+.chainlit/translations/
 
 # OS/editor files
 .DS_Store
 Thumbs.db
 .idea/
 .vscode/
+
+# Persisted vector store (rebuilt by app.rag.ingestion.build_index())
+storage/
 
