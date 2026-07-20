@@ -245,7 +245,10 @@ managed inference path.
   not-fully-eliminated limitation - a conservative failure mode (refuses
   rather than guesses), not a hallucination risk.
 - Regex masking covers specified identifiers, not every possible personal or
-  clinical identifier.
+  clinical identifier - see [privacy.md](privacy.md)'s "Not Currently
+  Masked" section for the concrete gap (names, National ID, KRA PIN,
+  addresses, free-text quasi-identifiers) and why closing it needs more
+  than adding regex patterns.
 - The current service has no authentication, authorization, durable memory,
   distributed limiter/checkpointer, or production audit sink. Process restarts
   reset limits, and new Chainlit sessions receive new allowances.
@@ -260,3 +263,84 @@ managed inference path.
   knowledge base needs richer PDF structure, additional file types
   (`.docx`, `.html`, `.csv`), or better multi-column text ordering than
   `pypdf`'s page-by-page extraction provides.
+
+## Future Scaling Priorities
+
+A full audit of known gaps, organized by area, kept current as new gaps are
+found rather than left to accumulate only in chat history or commit
+messages.
+
+**Retrieval/RAG**
+- Lexical (keyword-overlap) grounding is deterministic and conservative but
+  not semantic - can reject a relevant synonym with no shared keyword.
+- `similarity_top_k=5` and the `_MAX_GROUNDED_SOURCES=2` cap in
+  `app/rag/grounding.py` were both tuned reactively against two specific
+  production bugs, not from a systematic evaluation - worth a broader test
+  pass with a larger, varied question set before treating these numbers as
+  final.
+- PDF text extraction (`pypdf`) has real layout artifacts (page markers,
+  irregular whitespace) that have measurably degraded at least one real
+  answer - see the PDF ingestion note above.
+- Qdrant's managed query embedding is not guaranteed bit-identical between
+  calls - a source of non-determinism outside this app's control.
+
+**Agent/model**
+- System-prompt changes are fragile in ways only visible under live
+  testing: a change tried during development measurably made responses
+  *less* reliable, and no automated test caught it before manual live
+  testing did. There is no automated eval harness (a fixed set of Q&A pairs
+  run against a real model after any prompt/retrieval change) that would
+  catch this class of regression before it reaches production.
+- The free-tier `gpt-oss:20b-cloud` chat model has been observed to degrade
+  under bursty usage, returning generic non-answers instead of failing
+  loudly - no monitoring/alerting exists for this, and the existing
+  local/cloud fallback only triggers on hard failures, not degraded-quality
+  200 responses.
+- Approximate token counting for history trimming is not exact to the
+  actual model tokenizer.
+
+**Memory/state**
+- `InMemorySaver` (conversation memory) and the in-process rate limiter are
+  both process-local - lost on restart, and would silently fragment across
+  replicas if the service scaled beyond one worker. `--workers 1` is a
+  direct consequence of this, not an independent choice.
+
+**Access control**
+- The service has no authentication or authorization anywhere in the
+  codebase (verified by grep, not assumed). Rate limiting is the only abuse
+  control, scoped to IP (API) or browser session (UI) - never tied to a
+  real user identity.
+- No role-based access - anyone reaching the URL has identical capability.
+
+**Observability**
+- Logs are stdout-only (read via `railway logs`), with no aggregation,
+  retention policy, search, or alerting. Every production issue found
+  during development (free-tier throttling, retrieval context-overload) was
+  caught by manual live testing, not by any automated signal.
+- No metrics or dashboards for latency, error rate, or retrieval quality
+  over time.
+
+**Compliance**
+- Masking as implemented is a mechanism, not full Kenya Data Protection Act
+  (2019) compliance - see privacy.md's "Not Currently Masked" section.
+  Consent flows, data-subject access/deletion rights, breach notification,
+  ODPC registration, and data-processing agreements with Qdrant/Ollama Cloud
+  as third-party processors are all absent.
+
+**Deployment/CI**
+- No GitHub-connected auto-deploy; every deploy is a manual `railway up`.
+  No branch-protection/required-CI-check gate on `main`.
+- No automated dependency vulnerability scanning configured.
+
+### If Prioritizing Next Steps
+
+1. **Add Kenyan National ID and KRA PIN regex patterns** - highest-value,
+   lowest-effort PII win, since both are fixed-format like the three
+   patterns already implemented.
+2. **An automated eval/regression harness for agent behavior** - so a
+   prompt or retrieval regression is caught before reaching production,
+   not by manual live testing after the fact.
+3. **Basic authentication** - even a simple shared-secret or API-key gate
+   would close the largest access-control gap at low implementation cost.
+4. **Structured logging to a real sink** - so observability does not depend
+   on someone manually running `railway logs` during an incident.

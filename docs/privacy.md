@@ -20,6 +20,38 @@ system or a substitute for organizational access controls and governance.
 Examples currently detected include `+254712345678`, `0712345678`,
 `0112345678`, `patient@example.co.ke`, and `AP-123456`.
 
+## Not Currently Masked - a Real Gap, Not Just a Future Nice-to-Have
+
+Masking is a fixed whitelist of three regex patterns. Everything outside
+that whitelist passes through unmasked. For this domain (Kenyan insurance
+verification), that gap includes identifiers that come up routinely in
+real conversations:
+
+| Not masked | Why it matters here |
+|---|---|
+| Full names | The single most common identifier in any message - never caught |
+| Kenyan National ID (7-8 digits) | Standard KYC identifier - arguably more central to real verification than the member ID pattern that *is* covered |
+| KRA PIN (e.g. `A012345678Z`) | Used for tax/billing-linked verification |
+| Passport number | Alternative ID for dependents/expatriate members |
+| Physical/postal address | Common in claims and dependents-coverage context |
+| Date of birth | Routinely given alongside an ID for verification |
+| M-Pesa transaction codes | Distinct from the phone number itself; appears in payment/claims disputes |
+| Next-of-kin name/contact | Comes up in dependents-coverage questions |
+| Free-text quasi-identifiers | e.g. "the only diabetic patient in my family in Kilimani" - no regex pattern can ever catch this category |
+
+**This is a structural limitation, not just a missing-pattern list.** A
+fixed regex whitelist can only ever catch identifiers with a known, fixed
+format - it has no way to catch novel free-text identifying information
+(names, addresses, quasi-identifying combinations) no matter how many
+patterns are added. National ID and KRA PIN are good candidates for
+*incremental* regex coverage, since they're fixed-format like the existing
+three. Names, addresses, and free-text quasi-identifiers need a
+fundamentally different approach - e.g. NER-based (Named Entity
+Recognition) detection or a hybrid regex + small classifier model - before
+this system's masking claim extends to "personal data" in the broader
+sense the Kenya Data Protection Act (2019) uses, rather than just the
+three identifier types actually implemented.
+
 ## Lifecycle of a Request
 
 1. Chainlit or FastAPI constructs a Pydantic `ChatRequest`, which validates and

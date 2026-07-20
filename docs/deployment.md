@@ -252,7 +252,10 @@ records are used:
 
 - obtain legal and security approval for every processor and feature;
 - confirm applicable contracts/BAAs and data-processing regions in writing;
-- expand PII detection beyond the prototype patterns;
+- expand PII detection beyond the prototype patterns - see
+  [privacy.md](privacy.md)'s "Not Currently Masked" section for the specific
+  gap (names, National ID, KRA PIN, addresses, and why this needs more than
+  just adding regex patterns);
 - add authentication, authorization, audit logging, retention, and deletion;
 - protect both Chainlit WebSockets and FastAPI routes with the selected access
   controls;
