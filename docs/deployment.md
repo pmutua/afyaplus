@@ -147,7 +147,7 @@ The effective start command is:
 python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
 ```
 
-Create the service from `pmutua/AfyaPlus-Triage-Engine`, targeting the approved
+Create the service from `pmutua/AfyaPlus`, targeting the approved
 production branch. Generate one Railway HTTPS domain after the first healthy
 deployment. Do not add a volume: vectors remain in Qdrant, and conversation
 memory is intentionally process-local.
